@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>D-Swift Mall — Admin Dashboard</title>
+<link rel="icon" type="image" href="favicon-round.png">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<style>
+:root{
+  --admin:#2d2d5e; --adark:#1a1a2e; --aaccent:#ffd166;
+  --green:#0ba87e; --red:#ff6b6b; --blue:#3a5fd9; --bg:#f0f2f5;
+}
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',sans-serif;}
+body{background:var(--bg);min-height:100vh;padding-bottom:30px;}
+
+/* ── SIGN-IN GATE ── */
+#authGate{
+  position:fixed;inset:0;background:#fff;z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:2rem;text-align:center;
+}
+.gate-icon{
+  width:80px;height:80px;border-radius:50%;
+  background:linear-gradient(135deg,var(--admin),var(--adark));
+  display:flex;align-items:center;justify-content:center;
+  font-size:2rem;color:#fff;margin:0 auto 20px;
+  box-shadow:0 8px 30px rgba(45,45,94,.35);
+}
+#authGate h2{font-size:1.4rem;color:var(--adark);margin-bottom:8px;}
+#authGate p{font-size:0.88rem;color:#888;margin-bottom:26px;max-width:320px;}
+.gate-form{width:100%;max-width:320px;display:flex;flex-direction:column;gap:12px;}
+.gate-form input{
+  padding:13px 16px;border:2px solid #e0e0e0;border-radius:10px;
+  font-size:0.95rem;outline:none;font-family:inherit;transition:.2s;
+}
+.gate-form input:focus{border-color:var(--admin);}
+.gate-btn{
+  padding:13px;background:linear-gradient(135deg,var(--admin),var(--adark));
+  color:#fff;border:none;border-radius:40px;font-size:0.95rem;font-weight:700;
+  cursor:pointer;font-family:inherit;letter-spacing:.5px;margin-top:6px;transition:opacity .2s;
+}
+.gate-btn:hover{opacity:.9;}
+.gate-btn:disabled{opacity:.6;cursor:not-allowed;}
+.gate-error{color:var(--red);font-size:.85rem;min-height:20px;}
+
+/* ── TOP BAR ── */
+.top-bar{
+  background:linear-gradient(135deg,var(--admin),var(--adark));
+  color:#fff;padding:14px 18px;display:flex;align-items:center;
+  gap:12px;box-shadow:0 3px 12px rgba(45,45,94,.3);
+  position:sticky;top:0;z-index:100;
+}
+.top-bar-icon{
+  width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;
+}
+.top-bar h2{font-size:1.05rem;}
+.top-bar small{font-size:.72rem;opacity:.75;display:block;}
+.top-bar-right{margin-left:auto;display:flex;gap:14px;align-items:center;}
+.top-bar-right button{
+  background:rgba(255,255,255,.15);border:none;color:#fff;width:34px;height:34px;
+  border-radius:8px;cursor:pointer;font-size:0.95rem;
+}
+.top-bar-right button:hover{background:rgba(255,255,255,.28);}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px;}
+.stat-card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 3px 12px rgba(0,0,0,.07);display:flex;flex-direction:column;gap:6px;}
+.stat-card .stat-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;margin-bottom:2px;}
+.stat-card h3{font-size:1.35rem;color:var(--adark);}
+.stat-card p{font-size:.75rem;color:#888;}
+.indigo-bg{background:#eceaff;color:var(--admin);}
+.green-bg{background:#e8faf5;color:var(--green);}
+.red-bg{background:#fff0f0;color:var(--red);}
+.blue-bg{background:#e8f0ff;color:var(--blue);}
+.yellow-bg{background:#fff9e6;color:#e6a817;}
+
+@media (min-width:700px){ .stats-grid{grid-template-columns:repeat(4,1fr);} }
+
+/* ── TABS ── */
+.tabs{display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;}
+.tab-btn{
+  flex-shrink:0;padding:9px 18px;border-radius:30px;border:1.5px solid #e0e0e0;
+  background:#fff;color:#555;font-size:.85rem;font-weight:600;cursor:pointer;
+  font-family:inherit;transition:.2s;
+}
+.tab-btn.active{background:var(--admin);border-color:var(--admin);color:#fff;}
+
+/* ── SECTION ── */
+.section{background:#fff;border-radius:16px;margin:0 16px 14px;padding:18px;box-shadow:0 3px 12px rgba(0,0,0,.06);}
+.section-title{font-size:1rem;font-weight:700;color:var(--adark);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.section-title i{color:var(--admin);margin-right:6px;}
+.search-box{position:relative;flex:1;min-width:160px;max-width:260px;}
+.search-box input{
+  width:100%;padding:9px 14px 9px 34px;border:1.5px solid #e0e0e0;border-radius:30px;
+  font-size:.82rem;outline:none;font-family:inherit;
+}
+.search-box i{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#aaa;font-size:.8rem;}
+
+.filter-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.chip{
+  padding:6px 14px;border-radius:20px;border:1.5px solid #e0e0e0;background:#fafafa;
+  color:#666;font-size:.76rem;font-weight:600;cursor:pointer;font-family:inherit;
+}
+.chip.active{background:var(--adark);border-color:var(--adark);color:#fff;}
+
+/* ── TABLE / LIST ── */
+.data-table{width:100%;border-collapse:collapse;font-size:.83rem;}
+.data-table th{
+  text-align:left;padding:9px 10px;color:#999;font-weight:600;font-size:.72rem;
+  text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid #f0f0f0;white-space:nowrap;
+}
+.data-table td{padding:11px 10px;border-bottom:1px solid #f4f4f4;vertical-align:middle;}
+.data-table tr.clickable{cursor:pointer;transition:background .15s;}
+.data-table tr.clickable:hover{background:#fafbff;}
+.row-name{font-weight:600;color:var(--adark);}
+.row-sub{font-size:.72rem;color:#999;}
+.badge{padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:700;white-space:nowrap;display:inline-block;}
+.badge.pending{background:#fff9e6;color:#e6a817;}
+.badge.accepted{background:#e8f0ff;color:var(--blue);}
+.badge.out_for_delivery{background:#f3e8ff;color:#8f10b7;}
+.badge.delivered{background:#e8faf5;color:var(--green);}
+.badge.role-seller{background:#fff0f0;color:var(--red);}
+.badge.role-buyer{background:#e8f0ff;color:var(--blue);}
+.badge.role-admin{background:#eceaff;color:var(--admin);}
+.badge.role-delivery{background:#f3e8ff;color:#8f10b7;}
+.empty-state{text-align:center;padding:34px 16px;color:#bbb;}
+.empty-state i{font-size:1.8rem;margin-bottom:8px;display:block;}
+.table-wrap{overflow-x:auto;}
+
+.link-btn{background:none;border:none;color:var(--blue);font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;text-decoration:underline;}
+
+/* ── MODAL (seller products / buyer orders) ── */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(26,26,46,.55);z-index:2000;align-items:flex-end;justify-content:center;}
+.modal-backdrop.open{display:flex;}
+.modal-sheet{
+  background:#fff;width:100%;max-width:560px;max-height:82vh;overflow-y:auto;
+  border-radius:20px 20px 0 0;padding:20px;position:relative;
+}
+@media (min-width:700px){
+  .modal-backdrop{align-items:center;}
+  .modal-sheet{border-radius:20px;}
+}
+.modal-close{position:absolute;top:14px;right:14px;background:#f0f0f0;border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:.9rem;color:#666;}
+.modal-title{font-size:1.05rem;font-weight:700;color:var(--adark);margin-bottom:2px;padding-right:36px;}
+.modal-sub{font-size:.78rem;color:#999;margin-bottom:16px;}
+
+.spinner-row{text-align:center;padding:40px;color:#aaa;}
+.spinner-row i{font-size:1.8rem;}
+
+.reason-box{
+  max-width:420px;margin:60px auto;background:#fff;border-radius:16px;padding:28px;
+  text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.08);
+}
+.reason-box i{font-size:2.2rem;color:var(--red);margin-bottom:12px;display:block;}
+.reason-box a{color:var(--admin);font-weight:700;text-decoration:none;}
+
+/* ── ADMIN ACTION CONTROLS (added) ── */
+.badge.role-delivery_agent{background:#f3e8ff;color:#8f10b7;}
+.badge.status-active{background:#e8faf5;color:var(--green);}
+.badge.status-suspended{background:#fff0f0;color:var(--red);}
+.badge.status-unread{background:#fff0f0;color:var(--red);}
+.badge.status-read{background:#f0f0f0;color:#999;}
+.thumb{width:38px;height:38px;border-radius:8px;object-fit:cover;background:#f0f0f0;flex-shrink:0;}
+.row-flex{display:flex;align-items:center;gap:10px;}
+.action-icons{display:flex;gap:6px;}
+.icon-btn-sm{
+  width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;
+  transition:opacity .15s;
+}
+.icon-btn-sm:hover{opacity:.75;}
+.icon-btn-sm.edit{background:#e8f0ff;color:var(--blue);}
+.icon-btn-sm.ban{background:#fff9e6;color:#e6a817;}
+.icon-btn-sm.unban{background:#e8faf5;color:var(--green);}
+.icon-btn-sm.del{background:#fff0f0;color:var(--red);}
+.status-select{
+  padding:6px 10px;border-radius:8px;border:1.5px solid #e0e0e0;font-size:.78rem;
+  font-family:inherit;background:#fff;cursor:pointer;outline:none;
+}
+.role-select-sm{
+  padding:5px 8px;border-radius:8px;border:1.5px solid #e0e0e0;font-size:.75rem;
+  font-family:inherit;background:#fff;cursor:pointer;outline:none;
+}
+.inline-fee-row{display:flex;gap:6px;align-items:center;}
+.inline-fee-row input{width:70px;padding:6px 8px;border-radius:8px;border:1.5px solid #e0e0e0;font-size:.78rem;font-family:inherit;}
+.inline-fee-row button{padding:6px 10px;border-radius:8px;border:none;background:var(--admin);color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;}
+
+/* ── FORM MODAL (user / product editing) ── */
+.form-group{margin-bottom:14px;}
+.form-group label{display:block;font-size:.78rem;font-weight:700;color:#555;margin-bottom:5px;}
+.form-group input, .form-group select, .form-group textarea{
+  width:100%;padding:10px 13px;border:1.5px solid #e0e0e0;border-radius:10px;
+  font-size:.88rem;font-family:inherit;outline:none;transition:.2s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus{border-color:var(--admin);}
+.form-group textarea{resize:vertical;min-height:70px;}
+.form-actions{display:flex;gap:10px;margin-top:18px;}
+.form-actions button{
+  flex:1;padding:11px;border-radius:10px;border:none;font-size:.85rem;font-weight:700;
+  cursor:pointer;font-family:inherit;
+}
+.form-save-btn{background:var(--admin);color:#fff;}
+.form-cancel-btn{background:#f0f0f0;color:#555;}
+.form-danger-btn{background:#fff0f0;color:var(--red);}
+.form-error{color:var(--red);font-size:.8rem;min-height:18px;margin-top:6px;}
+.form-img-preview{width:70px;height:70px;border-radius:10px;object-fit:cover;background:#f0f0f0;display:none;margin-bottom:8px;}
+.danger-note{background:#fff9e6;border:1px solid #ffe6a3;color:#8a6400;font-size:.78rem;padding:10px 12px;border-radius:10px;margin-bottom:14px;}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ SIGN-IN GATE ══════════════════ -->
+<div id="authGate">
+    <div class="gate-icon"><i class="fas fa-user-shield"></i></div>
+    <h2>Admin Login</h2>
+    <p>Sign in with your D-Swift Mall admin account to manage sellers, buyers and orders.</p>
+    <div class="gate-form">
+        <input type="email" id="adminEmail" placeholder="Admin email" autocomplete="username">
+        <input type="password" id="adminPassword" placeholder="Password" autocomplete="current-password">
+        <button class="gate-btn" id="adminLoginBtn" onclick="doAdminLogin()">Log In</button>
+        <div class="gate-error" id="gateError"></div>
+    </div>
+    <p style="font-size:.72rem;color:#bbb;margin-top:18px;max-width:300px;">Demo credentials: <strong>admin@dswift.demo</strong> / <strong>admin123</strong> — remove this once real Supabase admins are set up.</p>
+</div>
+
+<!-- ══════════════════ NOT AUTHORIZED ══════════════════ -->
+<div class="reason-box" id="notAuthorized" style="display:none;">
+    <i class="fas fa-ban"></i>
+    <h2 style="margin-bottom:8px;color:#1a1a2e;">Not an Admin Account</h2>
+    <p style="color:#888;font-size:.88rem;margin-bottom:16px;">
+        This account doesn't have admin access. Sign in with an admin account, or head back home.
+    </p>
+    <a href="index.html">← Back to Home</a>
+</div>
+
+<!-- ══════════════════ MAIN APP ══════════════════ -->
+<div id="mainApp" style="display:none;">
+
+    <div class="top-bar">
+        <div class="top-bar-icon"><i class="fas fa-user-shield"></i></div>
+        <div>
+            <h2>D-Swift Mall Admin</h2>
+            <small id="adminWho">&nbsp;</small>
+        </div>
+        <div class="top-bar-right">
+            <button title="Refresh" onclick="loadAdminData()"><i class="fas fa-rotate"></i></button>
+            <button title="Log out" onclick="adminLogout()"><i class="fas fa-arrow-right-from-bracket"></i></button>
+        </div>
+    </div>
+
+    <div class="stats-grid" id="statsGrid">
+        <!-- filled by JS -->
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
+        <button class="tab-btn" data-tab="users" onclick="switchTab('users')">Users</button>
+        <button class="tab-btn" data-tab="sellers" onclick="switchTab('sellers')">Sellers</button>
+        <button class="tab-btn" data-tab="buyers" onclick="switchTab('buyers')">Buyers</button>
+        <button class="tab-btn" data-tab="products" onclick="switchTab('products')">Products</button>
+        <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')">Orders</button>
+        <button class="tab-btn" data-tab="messages" onclick="switchTab('messages')">Messages</button>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="tab-panel" id="tab-overview">
+        <div class="section">
+            <div class="section-title"><span><i class="fas fa-clock-rotate-left"></i> Recent Orders</span></div>
+            <div class="table-wrap"><table class="data-table" id="recentOrdersTable"></table></div>
+        </div>
+    </div>
+
+    <!-- USERS (all roles — full account management) -->
+    <div class="tab-panel" id="tab-users" style="display:none;">
+        <div class="section">
+            <div class="section-title">
+                <span><i class="fas fa-user-gear"></i> All Users</span>
+                <div class="search-box"><i class="fas fa-search"></i><input type="text" id="userSearch" placeholder="Search users…" oninput="renderUsers()"></div>
+            </div>
+            <div class="filter-chips" id="userFilterChips">
+                <button class="chip active" data-role="all" onclick="setUserFilter('all')">All</button>
+                <button class="chip" data-role="buyer" onclick="setUserFilter('buyer')">Buyers</button>
+                <button class="chip" data-role="seller" onclick="setUserFilter('seller')">Sellers</button>
+                <button class="chip" data-role="delivery" onclick="setUserFilter('delivery')">Delivery</button>
+                <button class="chip" data-role="admin" onclick="setUserFilter('admin')">Admins</button>
+                <button class="chip" data-role="suspended" onclick="setUserFilter('suspended')">Suspended</button>
+            </div>
+            <div class="table-wrap"><table class="data-table" id="usersTable"></table></div>
+        </div>
+    </div>
+
+    <!-- SELLERS -->
+    <div class="tab-panel" id="tab-sellers" style="display:none;">
+        <div class="section">
+            <div class="section-title">
+                <span><i class="fas fa-store"></i> Sellers</span>
+                <div class="search-box"><i class="fas fa-search"></i><input type="text" id="sellerSearch" placeholder="Search sellers…" oninput="renderSellers()"></div>
+            </div>
+            <div class="table-wrap"><table class="data-table" id="sellersTable"></table></div>
+        </div>
+    </div>
+
+    <!-- BUYERS -->
+    <div class="tab-panel" id="tab-buyers" style="display:none;">
+        <div class="section">
+            <div class="section-title">
+                <span><i class="fas fa-users"></i> Buyers</span>
+                <div class="search-box"><i class="fas fa-search"></i><input type="text" id="buyerSearch" placeholder="Search buyers…" oninput="renderBuyers()"></div>
+            </div>
+            <div class="table-wrap"><table class="data-table" id="buyersTable"></table></div>
+        </div>
+    </div>
+
+    <!-- PRODUCTS (global catalog — every seller's listings) -->
+    <div class="tab-panel" id="tab-products" style="display:none;">
+        <div class="section">
+            <div class="section-title">
+                <span><i class="fas fa-box-open"></i> All Products</span>
+                <button class="gate-btn" style="margin:0;padding:9px 18px;font-size:.8rem;" onclick="openProductCreate()"><i class="fas fa-plus"></i> Add Product</button>
+                <div class="search-box"><i class="fas fa-search"></i><input type="text" id="productSearch" placeholder="Search products…" oninput="renderProductsGlobal()"></div>
+            </div>
+            <div class="filter-chips" id="productFilterChips">
+                <button class="chip active" data-cat="all" onclick="setProductFilter('all')">All</button>
+                <button class="chip" data-cat="Fashion" onclick="setProductFilter('Fashion')">Fashion</button>
+                <button class="chip" data-cat="Electronics" onclick="setProductFilter('Electronics')">Electronics</button>
+                <button class="chip" data-cat="Beauty" onclick="setProductFilter('Beauty')">Beauty</button>
+                <button class="chip" data-cat="Sports" onclick="setProductFilter('Sports')">Sports</button>
+                <button class="chip" data-cat="Home &amp; Kitchen" onclick="setProductFilter('Home &amp; Kitchen')">Home &amp; Kitchen</button>
+            </div>
+            <div class="table-wrap"><table class="data-table" id="productsTable"></table></div>
+        </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="tab-panel" id="tab-orders" style="display:none;">
+        <div class="section">
+            <div class="section-title">
+                <span><i class="fas fa-box"></i> All Orders</span>
+                <div class="search-box"><i class="fas fa-search"></i><input type="text" id="orderSearch" placeholder="Search ref or buyer…" oninput="renderOrders()"></div>
+            </div>
+            <div class="filter-chips" id="orderFilterChips">
+                <button class="chip active" data-status="all" onclick="setOrderFilter('all')">All</button>
+                <button class="chip" data-status="pending" onclick="setOrderFilter('pending')">Pending</button>
+                <button class="chip" data-status="accepted" onclick="setOrderFilter('accepted')">Packed</button>
+                <button class="chip" data-status="out_for_delivery" onclick="setOrderFilter('out_for_delivery')">Out for Delivery</button>
+                <button class="chip" data-status="delivered" onclick="setOrderFilter('delivered')">Delivered</button>
+                <button class="chip" data-status="cancelled" onclick="setOrderFilter('cancelled')">Cancelled</button>
+            </div>
+            <div class="table-wrap"><table class="data-table" id="ordersTable"></table></div>
+        </div>
+    </div>
+
+    <!-- MESSAGES (contact form submissions) -->
+    <div class="tab-panel" id="tab-messages" style="display:none;">
+        <div class="section">
+            <div class="section-title">
+                <span><i class="fas fa-envelope-open-text"></i> Contact Messages</span>
+                <div class="search-box"><i class="fas fa-search"></i><input type="text" id="messageSearch" placeholder="Search messages…" oninput="renderMessages()"></div>
+            </div>
+            <div class="table-wrap"><table class="data-table" id="messagesTable"></table></div>
+        </div>
+    </div>
+
+</div>
+
+<!-- DETAIL MODAL (seller products / buyer orders) -->
+<div class="modal-backdrop" id="detailModal" onclick="if(event.target===this) closeDetailModal()">
+    <div class="modal-sheet">
+        <button class="modal-close" onclick="closeDetailModal()"><i class="fas fa-times"></i></button>
+        <div class="modal-title" id="modalTitle"></div>
+        <div class="modal-sub" id="modalSub"></div>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<!-- FORM MODAL (edit/create user or product) -->
+<div class="modal-backdrop" id="formModal" onclick="if(event.target===this) closeFormModal()">
+    <div class="modal-sheet">
+        <button class="modal-close" onclick="closeFormModal()"><i class="fas fa-times"></i></button>
+        <div class="modal-title" id="formModalTitle"></div>
+        <div class="modal-sub" id="formModalSub"></div>
+        <div id="formModalBody"></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-client.js"></script>
+<script>
+const STATUS_LABEL = { pending:'Pending', accepted:'Packed', out_for_delivery:'Out for Delivery', delivered:'Delivered' };
+
+let adminUser   = null;
+let allProfiles = [];
+let allProducts = [];
+let allSales    = [];
+let allOrders   = [];
+let allMessages = [];
+let orderFilter   = 'all';
+let userFilter    = 'all';
+let productFilter = 'all';
+
+// ══════════════════ SIGN-IN ══════════════════
+/* ─────────────────────────────────────────────────────────────
+   TEMPORARY DEMO LOGIN
+   -------------------------------------------------------------
+   Hardcoded so you can preview the dashboard before your Supabase
+   `profiles` table has a real row with role = 'admin'.
+   Delete this whole block (and the "if (isDemoLogin...)" check
+   below) once you switch to real Supabase admin accounts.
+   ───────────────────────────────────────────────────────────── */
+const DEMO_ADMIN_EMAIL    = 'admin@dswift.demo';
+const DEMO_ADMIN_PASSWORD = 'admin123';
+let isDemoSession = false;
+
+async function doAdminLogin() {
+    const email    = document.getElementById('adminEmail').value.trim();
+    const password = document.getElementById('adminPassword').value;
+    const err      = document.getElementById('gateError');
+    const btn      = document.getElementById('adminLoginBtn');
+    err.textContent = '';
+
+    if (!email || !password) { err.textContent = 'Enter your email and password.'; return; }
+
+    // ── DEMO SHORTCUT — remove when using real Supabase admins ──
+    if (email.toLowerCase() === DEMO_ADMIN_EMAIL && password === DEMO_ADMIN_PASSWORD) {
+        isDemoSession = true;
+        enterDemoAdmin();
+        return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) {
+        err.textContent = 'Incorrect email or password.';
+        btn.disabled = false; btn.textContent = 'Log In';
+        return;
+    }
+    await enterIfAdmin(data.user.id);
+    btn.disabled = false; btn.textContent = 'Log In';
+}
+
+function enterDemoAdmin() {
+    adminUser = { id: 'demo-admin', name: 'Demo Admin', email: DEMO_ADMIN_EMAIL, role: 'admin' };
+    document.getElementById('authGate').style.display = 'none';
+    document.getElementById('notAuthorized').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    document.getElementById('adminWho').innerHTML = `Signed in as ${adminUser.name} <span style="background:rgba(255,209,102,.25);color:#ffd166;padding:2px 8px;border-radius:20px;font-weight:700;margin-left:6px;">DEMO MODE</span>`;
+    loadAdminData();
+}
+/* ── END DEMO LOGIN BLOCK ── */
+
+async function enterIfAdmin(userId) {
+    const { data: profile, error } = await sb.from('profiles').select('*').eq('id', userId).single();
+    if (error || !profile || profile.role !== 'admin') {
+        document.getElementById('authGate').style.display = 'none';
+        document.getElementById('notAuthorized').style.display = 'block';
+        if (profile && profile.role !== 'admin') await sb.auth.signOut();
+        return;
+    }
+    adminUser = profile;
+    document.getElementById('authGate').style.display = 'none';
+    document.getElementById('notAuthorized').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    document.getElementById('adminWho').textContent = `Signed in as ${profile.name || profile.email}`;
+    loadAdminData();
+}
+
+async function adminLogout() {
+    if (isDemoSession) { window.location.reload(); return; }
+    await sb.auth.signOut();
+    window.location.reload();
+}
+
+// Skip the gate if already signed in as an admin this session
+document.addEventListener('DOMContentLoaded', async () => {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return;
+    document.getElementById('authGate').style.display = 'none';
+    await enterIfAdmin(session.user.id);
+});
+
+// ══════════════════ DATA LOADING ══════════════════
+async function loadAdminData() {
+    const statsGrid = document.getElementById('statsGrid');
+    statsGrid.innerHTML = `<div class="spinner-row" style="grid-column:1/-1;"><i class="fas fa-spinner fa-spin"></i></div>`;
+
+    try {
+        const [{ data: profiles, error: e1 }, { data: products, error: e2 },
+               { data: sales,    error: e3 }, { data: orders,   error: e4 },
+               contactsResult ] = await Promise.all([
+            sb.from('profiles').select('*'),
+            sb.from('products').select('*'),
+            sb.from('sales').select('*'),
+            sb.from('orders').select('*').order('created_at', { ascending: false }),
+            sb.from('contacts').select('*').order('created_at', { ascending: false }).then(r => r, () => ({ data: [] })),
+        ]);
+        const firstError = e1 || e2 || e3 || e4;
+        if (firstError) throw firstError;
+
+        allProfiles = profiles || [];
+        allProducts = products || [];
+        allSales    = sales || [];
+        allOrders   = (orders || []).map(o => ({
+            id: o.id, ref: o.ref, buyerId: o.buyer_id,
+            items: o.items || [], total: parseFloat(o.total),
+            subtotal: o.subtotal != null ? parseFloat(o.subtotal) : null,
+            deliveryFee: o.delivery_fee != null ? parseFloat(o.delivery_fee) : null,
+            status: o.status, date: o.order_date || o.created_at,
+        }));
+        // Messages table may not exist yet on every install — fail soft.
+        allMessages = (contactsResult && contactsResult.data) || [];
+
+        renderStats();
+        renderRecentOrders();
+        renderUsers();
+        renderSellers();
+        renderBuyers();
+        renderProductsGlobal();
+        renderOrders();
+        renderMessages();
+    } catch (err) {
+        statsGrid.innerHTML = `<div class="spinner-row" style="grid-column:1/-1;color:#e05555;">
+            <i class="fas fa-triangle-exclamation"></i>
+            <p style="margin-top:8px;font-size:.85rem;">Could not load admin data — your database permissions may not be set up for admin access yet.</p>
+        </div>`;
+    }
+}
+
+// ══════════════════ TABS ══════════════════
+function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-tab') === name));
+    document.querySelectorAll('.tab-panel').forEach(p => p.style.display = (p.id === 'tab-' + name) ? 'block' : 'none');
+}
+
+// ══════════════════ STATS ══════════════════
+function renderStats() {
+    const sellers   = allProfiles.filter(p => p.role === 'seller');
+    const buyers    = allProfiles.filter(p => p.role === 'buyer');
+    const delivery  = allProfiles.filter(p => p.role === 'delivery' || p.role === 'delivery_agent');
+    const admins    = allProfiles.filter(p => p.role === 'admin');
+    const suspended = allProfiles.filter(p => p.is_banned);
+    const pending   = allOrders.filter(o => o.status === 'pending').length;
+    const inProgress= allOrders.filter(o => o.status === 'accepted' || o.status === 'out_for_delivery').length;
+    const delivered = allOrders.filter(o => o.status === 'delivered').length;
+    const revenue   = allOrders.filter(o => o.status === 'delivered').reduce((s, o) => s + o.total, 0);
+
+    const cards = [
+        { icon:'fa-store',      cls:'red-bg',    val: sellers.length,       label:'Sellers' },
+        { icon:'fa-users',      cls:'blue-bg',   val: buyers.length,        label:'Buyers' },
+        { icon:'fa-truck',      cls:'indigo-bg', val: delivery.length,      label:'Delivery Agents' },
+        { icon:'fa-user-shield',cls:'indigo-bg', val: admins.length,        label:'Admins' },
+        { icon:'fa-box-open',   cls:'indigo-bg', val: allProducts.length,   label:'Products Listed' },
+        { icon:'fa-receipt',    cls:'yellow-bg', val: allOrders.length,     label:'Total Orders' },
+        { icon:'fa-hourglass-half', cls:'yellow-bg', val: pending,          label:'Pending Orders' },
+        { icon:'fa-truck-fast', cls:'blue-bg',   val: inProgress,           label:'Packed / Out for Delivery' },
+        { icon:'fa-circle-check', cls:'green-bg', val: delivered,           label:'Delivered Orders' },
+        { icon:'fa-sack-dollar', cls:'green-bg',  val: `GH₵ ${revenue.toFixed(2)}`, label:'Revenue (Delivered)' },
+        { icon:'fa-user-slash', cls:'red-bg',     val: suspended.length,    label:'Suspended Users' },
+        { icon:'fa-envelope',   cls:'yellow-bg',  val: allMessages.filter(m => !m.is_read).length, label:'Unread Messages' },
+    ];
+    document.getElementById('statsGrid').innerHTML = cards.map(c => `
+        <div class="stat-card">
+            <div class="stat-icon ${c.cls}"><i class="fas ${c.icon}"></i></div>
+            <h3>${c.val}</h3>
+            <p>${c.label}</p>
+        </div>`).join('');
+}
+
+// ══════════════════ OVERVIEW: RECENT ORDERS ══════════════════
+function renderRecentOrders() {
+    const table = document.getElementById('recentOrdersTable');
+    const recent = allOrders.slice(0, 8);
+    if (!recent.length) { table.innerHTML = emptyRow('No orders yet.'); return; }
+    table.innerHTML = `
+        <tr><th>Ref</th><th>Buyer</th><th>Total</th><th>Status</th><th>Date</th></tr>
+        ${recent.map(o => orderRowHtml(o)).join('')}`;
+}
+
+// ══════════════════ SELLERS ══════════════════
+function renderSellers() {
+    const q = (document.getElementById('sellerSearch')?.value || '').toLowerCase().trim();
+    const sellers = allProfiles.filter(p => p.role === 'seller').filter(p =>
+        !q || (p.name || '').toLowerCase().includes(q) || (p.store_name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q));
+
+    const table = document.getElementById('sellersTable');
+    if (!sellers.length) { table.innerHTML = emptyRow('No sellers found.'); return; }
+
+    table.innerHTML = `
+        <tr><th>Seller</th><th>Contact</th><th>Products</th><th>Sales</th><th>Gross (GH₵)</th></tr>
+        ${sellers.map(s => {
+            const products = allProducts.filter(p => p.seller_id === s.id);
+            const sales    = allSales.filter(x => x.seller_id === s.id);
+            const gross    = sales.reduce((sum, x) => sum + parseFloat(x.gross || 0), 0);
+            return `
+            <tr class="clickable" onclick="openSellerDetail('${s.id}')">
+                <td><div class="row-name">${escHtml(s.name || 'Unnamed')}</div><div class="row-sub">${escHtml(s.store_name || '')}</div></td>
+                <td><div class="row-sub">${escHtml(s.email || '')}</div><div class="row-sub">${escHtml(s.phone || '')}</div></td>
+                <td>${products.length}</td>
+                <td>${sales.length}</td>
+                <td>${gross.toFixed(2)}</td>
+            </tr>`;
+        }).join('')}`;
+}
+
+function openSellerDetail(sellerId) {
+    const seller   = allProfiles.find(p => p.id === sellerId);
+    const products = allProducts.filter(p => p.seller_id === sellerId);
+    const sales    = allSales.filter(x => x.seller_id === sellerId);
+    const gross    = sales.reduce((sum, x) => sum + parseFloat(x.gross || 0), 0);
+
+    document.getElementById('modalTitle').textContent = seller?.name || 'Seller';
+    document.getElementById('modalSub').textContent = `${seller?.store_name ? seller.store_name + ' · ' : ''}${seller?.email || ''}${seller?.phone ? ' · ' + seller.phone : ''}`;
+
+    const body = document.getElementById('modalBody');
+    if (!products.length) {
+        body.innerHTML = `<p style="color:#888;font-size:.85rem;margin-bottom:10px;">This seller hasn't listed any products yet.</p>`;
+    } else {
+        body.innerHTML = `
+            <div class="table-wrap"><table class="data-table">
+                <tr><th>Product</th><th>Category</th><th>Price</th></tr>
+                ${products.map(p => `
+                    <tr>
+                        <td class="row-name">${escHtml(p.name)}</td>
+                        <td>${escHtml(p.category || '')}</td>
+                        <td>GH₵ ${parseFloat(p.price).toFixed(2)}</td>
+                    </tr>`).join('')}
+            </table></div>
+            <p style="margin-top:14px;font-size:.82rem;color:#555;"><strong>${sales.length}</strong> sale(s) · <strong>GH₵ ${gross.toFixed(2)}</strong> gross total</p>`;
+    }
+    openDetailModal();
+}
+
+// ══════════════════ BUYERS ══════════════════
+function renderBuyers() {
+    const q = (document.getElementById('buyerSearch')?.value || '').toLowerCase().trim();
+    const buyers = allProfiles.filter(p => p.role === 'buyer').filter(p =>
+        !q || (p.name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q));
+
+    const table = document.getElementById('buyersTable');
+    if (!buyers.length) { table.innerHTML = emptyRow('No buyers found.'); return; }
+
+    table.innerHTML = `
+        <tr><th>Buyer</th><th>Contact</th><th>Orders</th><th>Total Spent (GH₵)</th></tr>
+        ${buyers.map(b => {
+            const orders = allOrders.filter(o => o.buyerId === b.id);
+            const spent  = orders.reduce((sum, o) => sum + o.total, 0);
+            return `
+            <tr class="clickable" onclick="openBuyerDetail('${b.id}')">
+                <td><div class="row-name">${escHtml(b.name || 'Unnamed')}</div></td>
+                <td><div class="row-sub">${escHtml(b.email || '')}</div><div class="row-sub">${escHtml(b.phone || '')}</div></td>
+                <td>${orders.length}</td>
+                <td>${spent.toFixed(2)}</td>
+            </tr>`;
+        }).join('')}`;
+}
+
+function openBuyerDetail(buyerId) {
+    const buyer  = allProfiles.find(p => p.id === buyerId);
+    const orders = allOrders.filter(o => o.buyerId === buyerId);
+
+    document.getElementById('modalTitle').textContent = buyer?.name || 'Buyer';
+    document.getElementById('modalSub').textContent = `${buyer?.email || ''}${buyer?.phone ? ' · ' + buyer.phone : ''}`;
+
+    const body = document.getElementById('modalBody');
+    if (!orders.length) {
+        body.innerHTML = `<p style="color:#888;font-size:.85rem;">This buyer hasn't placed any orders yet.</p>`;
+    } else {
+        body.innerHTML = `
+            <div class="table-wrap"><table class="data-table">
+                <tr><th>Ref</th><th>Total</th><th>Status</th><th>Date</th></tr>
+                ${orders.map(o => orderRowHtml(o, false)).join('')}
+            </table></div>`;
+    }
+    openDetailModal();
+}
+
+// ══════════════════ USERS (all roles — full account management) ══════════════════
+function setUserFilter(role) {
+    userFilter = role;
+    document.querySelectorAll('#userFilterChips .chip').forEach(c => c.classList.toggle('active', c.getAttribute('data-role') === role));
+    renderUsers();
+}
+
+function renderUsers() {
+    const table = document.getElementById('usersTable');
+    if (!table) return;
+    const q = (document.getElementById('userSearch')?.value || '').toLowerCase().trim();
+    let users = allProfiles;
+    if (userFilter === 'suspended') users = users.filter(p => p.is_banned);
+    else if (userFilter !== 'all')  users = users.filter(p => p.role === userFilter);
+    if (q) users = users.filter(p =>
+        (p.name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q) || (p.store_name || '').toLowerCase().includes(q));
+
+    if (!users.length) { table.innerHTML = emptyRow('No users found.'); return; }
+
+    table.innerHTML = `
+        <tr><th>User</th><th>Role</th><th>Contact</th><th>Status</th><th></th></tr>
+        ${users.map(u => {
+            const roleClass = 'role-' + (u.role || 'buyer');
+            const isSelf = adminUser && u.id === adminUser.id;
+            return `
+            <tr>
+                <td><div class="row-name">${escHtml(u.name || 'Unnamed')}</div><div class="row-sub">${escHtml(u.store_name || '')}</div></td>
+                <td><span class="badge ${roleClass}">${escHtml((u.role||'buyer').replace('_',' '))}</span></td>
+                <td><div class="row-sub">${escHtml(u.email || '')}</div><div class="row-sub">${escHtml(u.phone || '')}</div></td>
+                <td><span class="badge ${u.is_banned ? 'status-suspended' : 'status-active'}">${u.is_banned ? 'Suspended' : 'Active'}</span></td>
+                <td>
+                    <div class="action-icons">
+                        <button class="icon-btn-sm edit" title="Edit" onclick="openUserEditModal('${u.id}')"><i class="fas fa-pen"></i></button>
+                        <button class="icon-btn-sm ${u.is_banned ? 'unban' : 'ban'}" title="${u.is_banned ? 'Unsuspend' : 'Suspend'}" onclick="toggleUserBan('${u.id}', ${!u.is_banned})"><i class="fas ${u.is_banned ? 'fa-user-check' : 'fa-user-slash'}"></i></button>
+                        <button class="icon-btn-sm del" title="Delete account" ${isSelf ? 'disabled style="opacity:.35;cursor:not-allowed;"' : ''} onclick="deleteUserProfile('${u.id}')"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
+            </tr>`;
+        }).join('')}`;
+}
+
+function openUserEditModal(userId) {
+    const u = allProfiles.find(p => p.id === userId);
+    if (!u) return;
+    document.getElementById('formModalTitle').textContent = 'Edit User';
+    document.getElementById('formModalSub').textContent = u.email || '';
+    document.getElementById('formModalBody').innerHTML = `
+        <div class="form-group"><label>Full Name</label><input id="fUserName" value="${escAttr(u.name || '')}"></div>
+        <div class="form-group"><label>Phone</label><input id="fUserPhone" value="${escAttr(u.phone || '')}"></div>
+        <div class="form-group"><label>Location</label><input id="fUserLocation" value="${escAttr(u.location || '')}"></div>
+        <div class="form-group"><label>Store Name (sellers only)</label><input id="fUserStore" value="${escAttr(u.store_name || '')}"></div>
+        <div class="form-group"><label>Role</label>
+            <select id="fUserRole">
+                ${['buyer','seller','delivery','admin'].map(r => `<option value="${r}" ${u.role===r?'selected':''}>${r.charAt(0).toUpperCase()+r.slice(1)}</option>`).join('')}
+            </select>
+        </div>
+        <div class="danger-note"><i class="fas fa-triangle-exclamation"></i> Changing a role instantly changes what this person can access. Deleting only removes their profile row — their login account itself must be removed from Supabase Auth separately.</div>
+        <div class="form-error" id="fUserError"></div>
+        <div class="form-actions">
+            <button class="form-cancel-btn" onclick="closeFormModal()">Cancel</button>
+            <button class="form-save-btn" onclick="saveUserEdit('${u.id}')"><i class="fas fa-check"></i> Save</button>
+        </div>`;
+    openFormModal();
+}
+
+async function saveUserEdit(userId) {
+    const errEl = document.getElementById('fUserError');
+    const payload = {
+        name: document.getElementById('fUserName').value.trim(),
+        phone: document.getElementById('fUserPhone').value.trim(),
+        location: document.getElementById('fUserLocation').value.trim(),
+        store_name: document.getElementById('fUserStore').value.trim(),
+        role: document.getElementById('fUserRole').value,
+    };
+    const { error } = await sb.from('profiles').update(payload).eq('id', userId);
+    if (error) { errEl.textContent = error.message || 'Could not save changes.'; return; }
+    closeFormModal();
+    await loadAdminData();
+}
+
+async function toggleUserBan(userId, banState) {
+    const label = banState ? 'suspend' : 'unsuspend';
+    if (!confirm(`Are you sure you want to ${label} this user?`)) return;
+    const { error } = await sb.from('profiles').update({ is_banned: banState }).eq('id', userId);
+    if (error) { alert(error.message || `Could not ${label} user. (This feature needs an "is_banned" boolean column on the profiles table.)`); return; }
+    await loadAdminData();
+}
+
+async function deleteUserProfile(userId) {
+    if (adminUser && userId === adminUser.id) return;
+    if (!confirm('Permanently delete this user\'s profile? This cannot be undone.')) return;
+    const { error } = await sb.from('profiles').delete().eq('id', userId);
+    if (error) { alert(error.message || 'Could not delete user.'); return; }
+    await loadAdminData();
+}
+
+// ══════════════════ PRODUCTS (global catalog) ══════════════════
+function setProductFilter(cat) {
+    productFilter = cat;
+    document.querySelectorAll('#productFilterChips .chip').forEach(c => c.classList.toggle('active', c.getAttribute('data-cat') === cat));
+    renderProductsGlobal();
+}
+
+function renderProductsGlobal() {
+    const table = document.getElementById('productsTable');
+    if (!table) return;
+    const q = (document.getElementById('productSearch')?.value || '').toLowerCase().trim();
+    let products = allProducts;
+    if (productFilter !== 'all') products = products.filter(p => p.category === productFilter);
+    if (q) products = products.filter(p => (p.name || '').toLowerCase().includes(q) || (p.seller_name || '').toLowerCase().includes(q));
+
+    if (!products.length) { table.innerHTML = emptyRow('No products found.'); return; }
+
+    table.innerHTML = `
+        <tr><th>Product</th><th>Seller</th><th>Category</th><th>Price</th><th></th></tr>
+        ${products.map(p => `
+            <tr>
+                <td><div class="row-flex">
+                    ${p.image ? `<img class="thumb" src="${escAttr(p.image)}" onerror="this.style.display='none'">` : `<div class="thumb"></div>`}
+                    <div class="row-name">${escHtml(p.name)}</div>
+                </div></td>
+                <td class="row-sub">${escHtml(p.seller_name || '—')}</td>
+                <td>${escHtml(p.category || '')}</td>
+                <td>GH₵ ${parseFloat(p.price || 0).toFixed(2)}</td>
+                <td>
+                    <div class="action-icons">
+                        <button class="icon-btn-sm edit" title="Edit" onclick="openProductEditGlobal(${p.id})"><i class="fas fa-pen"></i></button>
+                        <button class="icon-btn-sm del" title="Delete" onclick="deleteProductGlobal(${p.id})"><i class="fas fa-trash"></i></button>
+                    </div>
+                </td>
+            </tr>`).join('')}`;
+}
+
+function productFormFields(p) {
+    const categories = ['Fashion','Electronics','Beauty','Sports','Home & Kitchen'];
+    return `
+        <img class="form-img-preview" id="pImgPreview" src="${escAttr(p?.image || '')}" style="${p?.image ? 'display:block;' : ''}">
+        <div class="form-group"><label>Image</label><input type="file" id="pImgInput" accept="image/*"></div>
+        <div class="form-group"><label>Name</label><input id="pName" value="${escAttr(p?.name || '')}"></div>
+        <div class="form-group"><label>Price (GH₵)</label><input id="pPrice" type="number" step="0.01" value="${p?.price ?? ''}"></div>
+        <div class="form-group"><label>Category</label>
+            <select id="pCategory">${categories.map(c => `<option ${p?.category===c?'selected':''}>${c}</option>`).join('')}</select>
+        </div>
+        <div class="form-group"><label>Description</label><textarea id="pDesc">${escHtml(p?.description || '')}</textarea></div>
+        <div class="form-error" id="fProdError"></div>`;
+}
+
+function openProductCreate() {
+    document.getElementById('formModalTitle').textContent = 'Add Product';
+    document.getElementById('formModalSub').textContent = 'Listed directly by D-Swift Mall admin';
+    document.getElementById('formModalBody').innerHTML = productFormFields(null) + `
+        <div class="form-actions">
+            <button class="form-cancel-btn" onclick="closeFormModal()">Cancel</button>
+            <button class="form-save-btn" onclick="saveProductGlobal(null)"><i class="fas fa-check"></i> Create</button>
+        </div>`;
+    wireProductImgPreview();
+    openFormModal();
+}
+
+function openProductEditGlobal(productId) {
+    const p = allProducts.find(x => x.id === productId);
+    if (!p) return;
+    document.getElementById('formModalTitle').textContent = 'Edit Product';
+    document.getElementById('formModalSub').textContent = p.seller_name || '';
+    document.getElementById('formModalBody').innerHTML = productFormFields(p) + `
+        <div class="form-actions">
+            <button class="form-cancel-btn" onclick="closeFormModal()">Cancel</button>
+            <button class="form-save-btn" onclick="saveProductGlobal(${p.id})"><i class="fas fa-check"></i> Save</button>
+        </div>`;
+    wireProductImgPreview();
+    openFormModal();
+}
+
+function wireProductImgPreview() {
+    document.getElementById('pImgInput')?.addEventListener('change', e => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const prev = document.getElementById('pImgPreview');
+            prev.src = ev.target.result; prev.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+async function adminUploadProductImage(file) {
+    const ext  = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${adminUser.id}/${Date.now()}_${Math.floor(Math.random()*9999)}.${ext}`;
+    const { error } = await sb.storage.from('products').upload(path, file);
+    if (error) return null;
+    const { data: { publicUrl } } = sb.storage.from('products').getPublicUrl(path);
+    return publicUrl;
+}
+
+async function saveProductGlobal(productId) {
+    const errEl = document.getElementById('fProdError');
+    const name  = document.getElementById('pName').value.trim();
+    const price = parseFloat(document.getElementById('pPrice').value);
+    const category = document.getElementById('pCategory').value;
+    const desc  = document.getElementById('pDesc').value.trim();
+    const fileInput = document.getElementById('pImgInput');
+
+    if (!name || !price || !category) { errEl.textContent = 'Name, Price and Category are required.'; return; }
+
+    try {
+        let imageUrl = productId ? (allProducts.find(p => p.id === productId)?.image || '') : '';
+        if (fileInput.files[0]) {
+            const url = await adminUploadProductImage(fileInput.files[0]);
+            if (url) imageUrl = url;
+        }
+
+        if (productId) {
+            const { error } = await sb.from('products').update({ name, price, category, description: desc, image: imageUrl }).eq('id', productId);
+            if (error) { errEl.textContent = error.message; return; }
+        } else {
+            const { error } = await sb.from('products').insert({
+                seller_id: adminUser.id, seller_name: 'D-Swift Mall', seller_phone: '',
+                name, price, category, description: desc, image: imageUrl, extra_images: [],
+            });
+            if (error) { errEl.textContent = error.message; return; }
+        }
+        closeFormModal();
+        await loadAdminData();
+    } catch (_) {
+        errEl.textContent = 'Network error. Please try again.';
+    }
+}
+
+async function deleteProductGlobal(productId) {
+    if (!confirm('Permanently remove this product from the store?')) return;
+    const { error } = await sb.from('products').delete().eq('id', productId);
+    if (error) { alert(error.message || 'Could not delete product.'); return; }
+    await loadAdminData();
+}
+
+// ══════════════════ MESSAGES (contact form) ══════════════════
+function renderMessages() {
+    const table = document.getElementById('messagesTable');
+    if (!table) return;
+    const q = (document.getElementById('messageSearch')?.value || '').toLowerCase().trim();
+    let msgs = allMessages;
+    if (q) msgs = msgs.filter(m => (m.name||'').toLowerCase().includes(q) || (m.email||'').toLowerCase().includes(q) || (m.message||'').toLowerCase().includes(q));
+
+    if (!msgs.length) { table.innerHTML = emptyRow('No messages yet.'); return; }
+
+    table.innerHTML = `
+        <tr><th>From</th><th>Message</th><th>Date</th><th>Status</th><th></th></tr>
+        ${msgs.map(m => {
+            const dateStr = m.created_at ? new Date(m.created_at).toLocaleDateString('en-GB') : '—';
+            const preview = (m.message || '').length > 60 ? m.message.slice(0, 60) + '…' : (m.message || '');
+            return `
+            <tr class="clickable" onclick="openMessageDetail(${m.id})">
+                <td><div class="row-name">${escHtml(m.name || '—')}</div><div class="row-sub">${escHtml(m.email || '')}</div></td>
+                <td class="row-sub">${escHtml(preview)}</td>
+                <td class="row-sub">${dateStr}</td>
+                <td><span class="badge ${m.is_read ? 'status-read' : 'status-unread'}">${m.is_read ? 'Read' : 'New'}</span></td>
+                <td><button class="icon-btn-sm del" title="Delete" onclick="event.stopPropagation();deleteMessage(${m.id})"><i class="fas fa-trash"></i></button></td>
+            </tr>`;
+        }).join('')}`;
+}
+
+function openMessageDetail(id) {
+    const m = allMessages.find(x => x.id === id);
+    if (!m) return;
+    document.getElementById('modalTitle').textContent = m.name || 'Message';
+    document.getElementById('modalSub').textContent = m.email || '';
+    document.getElementById('modalBody').innerHTML = `<p style="font-size:.88rem;color:#333;line-height:1.6;white-space:pre-wrap;">${escHtml(m.message || '')}</p>`;
+    openDetailModal();
+    if (!m.is_read) sb.from('contacts').update({ is_read: true }).eq('id', id).then(() => { m.is_read = true; renderMessages(); renderStats(); });
+}
+
+async function deleteMessage(id) {
+    if (!confirm('Delete this message?')) return;
+    const { error } = await sb.from('contacts').delete().eq('id', id);
+    if (error) { alert(error.message || 'Could not delete message.'); return; }
+    await loadAdminData();
+}
+
+// ══════════════════ ORDERS ══════════════════
+function setOrderFilter(status) {
+    orderFilter = status;
+    document.querySelectorAll('#orderFilterChips .chip').forEach(c => c.classList.toggle('active', c.getAttribute('data-status') === status));
+    renderOrders();
+}
+
+function renderOrders() {
+    const q = (document.getElementById('orderSearch')?.value || '').toLowerCase().trim();
+    let orders = allOrders;
+    if (orderFilter !== 'all') orders = orders.filter(o => o.status === orderFilter);
+    if (q) {
+        orders = orders.filter(o => {
+            const buyer = allProfiles.find(p => p.id === o.buyerId);
+            return (o.ref || '').toLowerCase().includes(q) || (buyer?.name || '').toLowerCase().includes(q);
+        });
+    }
+
+    const table = document.getElementById('ordersTable');
+    if (!orders.length) { table.innerHTML = emptyRow('No orders match.'); return; }
+
+    table.innerHTML = `
+        <tr><th>Ref</th><th>Buyer</th><th>Total</th><th>Status</th><th>Date</th><th></th></tr>
+        ${orders.map(o => orderRowHtml(o, true)).join('')}`;
+}
+
+function orderRowHtml(o, withControls) {
+    const buyer  = allProfiles.find(p => p.id === o.buyerId);
+    const status = o.status || 'pending';
+    const label  = STATUS_LABEL[status] || status;
+    const dateStr = o.date ? new Date(o.date).toLocaleDateString('en-GB') : '—';
+    if (!withControls) {
+        return `
+        <tr>
+            <td class="row-name">${escHtml(o.ref)}</td>
+            <td>${escHtml(buyer?.name || '—')}</td>
+            <td>GH₵ ${o.total.toFixed(2)}</td>
+            <td><span class="badge ${status}">${label}</span></td>
+            <td class="row-sub">${dateStr}</td>
+        </tr>`;
+    }
+    const statuses = ['pending','accepted','out_for_delivery','delivered','cancelled'];
+    return `
+        <tr>
+            <td class="row-name">${escHtml(o.ref)}</td>
+            <td>${escHtml(buyer?.name || '—')}</td>
+            <td>GH₵ ${o.total.toFixed(2)}</td>
+            <td>
+                <select class="status-select" onchange="updateOrderStatus(${o.id}, this.value)">
+                    ${statuses.map(s => `<option value="${s}" ${s===status?'selected':''}>${STATUS_LABEL[s] || (s.charAt(0).toUpperCase()+s.slice(1))}</option>`).join('')}
+                </select>
+            </td>
+            <td class="row-sub">${dateStr}</td>
+            <td>
+                <div class="action-icons">
+                    <a class="icon-btn-sm edit" title="Track" href="track.html?ref=${encodeURIComponent(o.ref)}" target="_blank" rel="noopener" style="text-decoration:none;"><i class="fas fa-location-dot"></i></a>
+                    <button class="icon-btn-sm del" title="Delete order" onclick="deleteOrder(${o.id})"><i class="fas fa-trash"></i></button>
+                </div>
+            </td>
+        </tr>`;
+}
+
+async function updateOrderStatus(orderId, newStatus) {
+    const { error } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId);
+    if (error) { alert(error.message || 'Could not update order status.'); return; }
+    await loadAdminData();
+    switchTab('orders');
+}
+
+async function deleteOrder(orderId) {
+    if (!confirm('Permanently delete this order? This cannot be undone.')) return;
+    const { error } = await sb.from('orders').delete().eq('id', orderId);
+    if (error) { alert(error.message || 'Could not delete order.'); return; }
+    await loadAdminData();
+    switchTab('orders');
+}
+
+// ══════════════════ MODAL ══════════════════
+function openDetailModal() {
+    document.getElementById('detailModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeDetailModal() {
+    document.getElementById('detailModal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+function openFormModal() {
+    document.getElementById('formModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeFormModal() {
+    document.getElementById('formModal').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// ══════════════════ HELPERS ══════════════════
+function emptyRow(msg) {
+    return `<tr><td colspan="6"><div class="empty-state"><i class="fas fa-inbox"></i><p>${msg}</p></div></td></tr>`;
+}
+function escHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escAttr(str) {
+    return escHtml(str).replace(/`/g, '&#96;');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    ['adminEmail', 'adminPassword'].forEach(id => {
+        document.getElementById(id)?.addEventListener('keydown', e => { if (e.key === 'Enter') doAdminLogin(); });
+    });
+});
+</script>
+</body>
+</html>

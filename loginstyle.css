@@ -1,0 +1,268 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+html { font-family:"Montserrat", sans-serif; -webkit-font-smoothing:antialiased; }
+
+body {
+    min-height:100vh;
+    background:#e9ebee;
+    color:#1d2129;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px 14px;
+}
+
+/* ════════════════════════════════
+   CARD
+════════════════════════════════ */
+.dswift-card {
+    width:100%;
+    max-width:400px;
+    background:#fff;
+    border-radius:20px;
+    box-shadow:0 14px 28px -10px rgba(0,0,0,0.12), 0 10px 10px -10px rgba(0,0,0,0.04);
+    padding:32px 28px 24px;
+    position:relative;
+}
+
+.dswift-brand {
+    display:flex;
+    justify-content:center;
+    margin-bottom:20px;
+}
+.dswift-brand-logo { height:92px; width:auto; display:block; }
+
+/* ════════════════════════════════
+   TABS
+════════════════════════════════ */
+.auth-tabs {
+    display:flex;
+    background:#f0f1f4;
+    border-radius:12px;
+    padding:4px;
+    margin-bottom:20px;
+}
+.auth-tab {
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:10px 8px;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:600;
+    color:#888;
+    border-radius:9px;
+    cursor:pointer;
+    transition:background .2s ease, color .2s ease, box-shadow .2s ease;
+}
+.auth-tab.active {
+    background:#fff;
+    color:#1d2129;
+    box-shadow:0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* ════════════════════════════════
+   PANELS
+════════════════════════════════ */
+.auth-panel { display:none; }
+.auth-panel.active { display:block; }
+
+.auth-title { font-size:19px; font-weight:700; margin-bottom:2px; text-align:center; }
+.auth-subtitle { font-size:13px; color:#888; text-align:center; margin-bottom:16px; }
+
+/* ════════════════════════════════
+   ROLE SELECTOR
+════════════════════════════════ */
+.role-selector { display:flex; gap:10px; margin-bottom:18px; }
+.role-btn {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    padding:12px 8px;
+    border:2px solid #e0e0e0;
+    border-radius:12px;
+    background:#f8f8f8;
+    color:#666;
+    font-family:inherit;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .2s ease;
+}
+.role-btn i { font-size:18px; }
+.role-btn.selected {
+    border-color:#ff4b2b;
+    background:#fff5f3;
+    color:#ff4b2b;
+}
+
+/* ════════════════════════════════
+   FORM
+════════════════════════════════ */
+form { display:flex; flex-direction:column; }
+form input {
+    background:#f2f2f2;
+    border:none;
+    border-radius:10px;
+    padding:13px 14px;
+    margin:6px 0;
+    width:100%;
+    font-size:14px;
+    font-family:inherit;
+    outline:none;
+    transition:background .15s ease;
+}
+form input:focus { background:#e8e8e8; }
+
+.row-between {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin:8px 0 4px;
+    flex-wrap:wrap;
+    gap:6px;
+}
+.remember-label {
+    display:flex; align-items:center; gap:6px;
+    cursor:pointer; user-select:none;
+    color:#555; font-size:12.5px; font-weight:500;
+}
+.remember-label input[type="checkbox"] {
+    width:1em; height:1em; margin:0; cursor:pointer;
+    accent-color:#ff4b2b;
+}
+.forget { color:#ff4b2b; font-size:12.5px; font-weight:600; cursor:pointer; }
+
+.error-msg {
+    color:#ff4b2b; font-size:12.5px;
+    display:block; text-align:center;
+    min-height:1.4rem; margin:4px 0;
+}
+
+.primary-btn {
+    display:block;
+    width:100%;
+    margin-top:6px;
+    border-radius:10px;
+    border:none;
+    background:#ff4b2b;
+    color:#fff;
+    font-size:14.5px;
+    font-weight:700;
+    padding:13px 1em;
+    letter-spacing:.4px;
+    cursor:pointer;
+    font-family:inherit;
+    transition:transform 80ms ease-in, opacity .15s ease;
+}
+.primary-btn:active { transform:scale(0.98); }
+.primary-btn:disabled { opacity:.65; cursor:not-allowed; }
+
+/* ════════════════════════════════
+   DIVIDER + GOOGLE BUTTON
+════════════════════════════════ */
+.divider {
+    display:flex; align-items:center; gap:10px;
+    margin:18px 0 12px;
+}
+.divider::before, .divider::after {
+    content:""; flex:1; height:1px; background:#e0e0e0;
+}
+.divider span { font-size:11.5px; color:#999; white-space:nowrap; }
+
+.google-btn {
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    border:1.5px solid #e0e0e0;
+    background:#fff;
+    border-radius:10px;
+    padding:11px 1em;
+    font-family:inherit;
+    font-size:13.5px;
+    font-weight:600;
+    color:#333;
+    cursor:pointer;
+    transition:background .15s ease, transform 80ms ease-in;
+}
+.google-btn:hover { background:#f7f7f7; }
+.google-btn:active { transform:scale(0.98); }
+
+/* ════════════════════════════════
+   FOOTER BITS
+════════════════════════════════ */
+.mob-switch-row {
+    text-align:center;
+    font-size:12.5px;
+    color:#888;
+    margin-top:16px;
+}
+.mob-switch-row span {
+    color:#ff4b2b;
+    font-weight:700;
+    cursor:pointer;
+    text-decoration:underline;
+}
+.back-link { text-align:center; margin-top:10px; font-size:12px; }
+.back-link a { color:#ff4b2b; text-decoration:none; font-weight:600; }
+.copy {
+    display:block;
+    text-align:center;
+    font-size:10.5px;
+    color:#bbb;
+    margin-top:18px;
+}
+
+/* Toast feedback (e.g. "coming soon" on Google button) */
+.dswift-toast {
+    position:fixed; left:50%; bottom:30px; transform:translate(-50%, 20px);
+    background:#1d2129; color:#fff; padding:12px 20px; border-radius:30px;
+    font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.25);
+    opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease;
+    z-index:10000; white-space:nowrap;
+}
+.dswift-toast.show { opacity:1; transform:translate(-50%, 0); }
+
+/* ════════════════════════════════
+   FORGOT PASSWORD MODAL
+   (injected by loginscript.js — kept here so it matches card styling)
+════════════════════════════════ */
+#forgotModal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:9999; }
+.fm-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.5); backdrop-filter:blur(3px); }
+.fm-box {
+    position:relative; background:#fff; border-radius:16px; padding:44px 28px 36px;
+    width:90%; max-width:380px; text-align:center; box-shadow:0 12px 40px rgba(0,0,0,.2);
+}
+.fm-close {
+    position:absolute; top:10px; right:10px; width:28px; height:28px; padding:0; margin:0;
+    display:flex; align-items:center; justify-content:center; background:#f2f2f4; border:none;
+    border-radius:50%; font-size:14px; line-height:1; cursor:pointer; color:#777;
+}
+.fm-icon { font-size:40px; margin:8px 0 10px; }
+.fm-box h2 { font-size:19px; color:#1d2129; margin-bottom:6px; }
+.fm-box p { font-size:12.5px; color:#888; margin-bottom:16px; }
+.fm-box input {
+    width:100%; padding:12px 14px; border:2px solid #e0e0e0; border-radius:10px;
+    font-size:14px; margin-bottom:12px; outline:none; font-family:inherit;
+}
+.fm-box input:focus { border-color:#ff4b2b; }
+#forgotBtn {
+    width:100%; padding:13px; border:none; border-radius:40px;
+    background:#ff4b2b; color:#fff; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit;
+}
+#forgotBtn:disabled { opacity:.6; cursor:not-allowed; }
+#forgotMsg { font-size:12.5px; margin-top:10px; min-height:18px; }
+
+/* ════════════════════════════════
+   RESPONSIVE
+════════════════════════════════ */
+@media (max-width:400px) {
+    .dswift-card { padding:26px 20px 18px; border-radius:16px; }
+    .auth-title { font-size:17px; }
+}
