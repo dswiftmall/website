@@ -19,8 +19,8 @@
 //      Vercel's environment variables, used by api/verify-payment.js.
 // ══════════════════════════════════════════════════════════════
 
-const SUPABASE_URL = 'YOUR_NEW_SUPABASE_PROJECT_URL_HERE';   // e.g. https://xxxxxxxxxxxx.supabase.co
-const SUPABASE_KEY = 'YOUR_NEW_SUPABASE_PUBLISHABLE_KEY_HERE'; // starts with sb_publishable_...
+const SUPABASE_URL = 'https://rcpajercygimumlhhokk.supabase.co/rest/v1/';   // e.g. https://xxxxxxxxxxxx.supabase.co
+const SUPABASE_KEY = 'sb_publishable_3urqfJ_blDmJFxqw6Q58iw_I-WU5yp5'; // starts with sb_publishable_...
 
 // `supabase` here is the global from the CDN script above (window.supabase).
 // We rename our client to `sb` so it doesn't collide with that global.
