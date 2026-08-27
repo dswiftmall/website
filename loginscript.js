@@ -85,16 +85,18 @@ document.getElementById('registerBtn').addEventListener('click', async function 
     const password = document.getElementById('regPassword').value;
     const phone    = document.getElementById('regPhone').value.trim();
     const role     = document.getElementById('regRole').value;
+    const momo     = document.getElementById('regMomo').value.trim();
     const errorEl  = document.getElementById('regError');
- 
+
     errorEl.style.color = '#ff4b2b';
     if (!name || !email || !password || !phone) { errorEl.textContent = 'Please fill in all required fields.'; return; }
     if (password.length < 6)          { errorEl.textContent = 'Password must be at least 6 characters.'; return; }
- 
+    if (role === 'seller' && !momo)   { errorEl.textContent = 'Sellers must provide a Mobile Money number.'; return; }
+
     this.disabled = true; this.textContent = 'Creating account…';
- 
+
     try {
-        // name/phone/role ride along as user_metadata — the
+        // name/phone/role/momo_number ride along as user_metadata — the
         // handle_new_user() trigger on the database reads them to
         // populate the profiles row automatically.
         //
@@ -110,7 +112,7 @@ document.getElementById('registerBtn').addEventListener('click', async function 
         const { data, error } = await sb.auth.signUp({
             email, password,
             options: {
-                data: { name, phone, role },
+                data: { name, phone, role, momo_number: role === 'seller' ? momo : null },
                 emailRedirectTo: window.location.href.replace(/[^/]*$/, '') + 'login.html',
             }
         });

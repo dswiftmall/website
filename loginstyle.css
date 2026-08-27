@@ -142,6 +142,10 @@ form input:focus { background:#e8e8e8; }
     display:block; text-align:center;
     min-height:1.4rem; margin:4px 0;
 }
+.momo-hint {
+    display:block; font-size:11.5px; color:#888;
+    margin:-2px 0 6px; line-height:1.4;
+}
 
 .primary-btn {
     display:block;

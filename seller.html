@@ -519,6 +519,10 @@ async function addProduct() {
     const btn         = document.querySelector('#tab-addproduct .submit-btn');
 
     if (!name || !price || !category) { errorEl.textContent = 'Please fill in Name, Price and Category.'; return; }
+    if (!user.momoNumber || !user.momoNumber.trim()) {
+        errorEl.innerHTML = 'You need a Mobile Money number on file before listing products. <a href="profile.html" style="color:inherit;text-decoration:underline;font-weight:700;">Add it in your profile</a>.';
+        return;
+    }
     errorEl.textContent = '';
 
     btn.disabled = true;

@@ -73,6 +73,8 @@
             <input type="email"    id="regEmail"    placeholder="Email *"/>
             <input type="password" id="regPassword" placeholder="Password * (min 6 chars)"/>
             <input type="tel"      id="regPhone"    placeholder="Phone Number *"/>
+            <input type="tel"      id="regMomo"     placeholder="Mobile Money Number *" style="display:none;"/>
+            <span id="regMomoHint" class="momo-hint" style="display:none;">Required for sellers — this is where D-Swift Mall sends your payouts.</span>
             <span id="regError" class="error-msg"></span>
             <button id="registerBtn" class="primary-btn">Create Account</button>
         </form>
@@ -112,6 +114,13 @@
         document.getElementById('regRole').value = role;
         document.getElementById('roleBuyerSignup').classList.toggle('selected', role === 'buyer');
         document.getElementById('roleSellerSignup').classList.toggle('selected', role === 'seller');
+
+        const momoField = document.getElementById('regMomo');
+        const momoHint  = document.getElementById('regMomoHint');
+        const isSeller  = role === 'seller';
+        momoField.style.display = isSeller ? 'block' : 'none';
+        momoHint.style.display  = isSeller ? 'block' : 'none';
+        if (!isSeller) momoField.value = ''; // don't submit a stale value if they switch back to Buyer
     }
 </script>
 </body>

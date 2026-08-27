@@ -168,6 +168,21 @@
             white-space:nowrap; flex-shrink:0;
         }
 
+        /* MOMO WARNING */
+        .momo-warning {
+            display:flex; align-items:flex-start; gap:12px;
+            background:#fff5f0; border:1.5px solid #ffcba8;
+            border-radius:14px; margin:0 16px 14px; padding:14px 16px;
+        }
+        .momo-warning i { color:#e08a3c; font-size:1.1rem; margin-top:2px; flex-shrink:0; }
+        .momo-warning strong { display:block; font-size:0.9rem; color:#7a4a1e; margin-bottom:2px; }
+        .momo-warning p { font-size:0.78rem; color:#8a6a4a; line-height:1.4; margin:0; }
+        .momo-warning button {
+            background:#e08a3c; color:white; border:none; border-radius:20px;
+            padding:8px 14px; font-size:0.78rem; font-weight:700;
+            white-space:nowrap; flex-shrink:0; cursor:pointer; align-self:center;
+        }
+
         /* LOGOUT */
         .logout-section { margin:0 16px 20px; }
         .logout-btn {
@@ -281,6 +296,16 @@
         <a href="seller.html">Go &rsaquo;</a>
     </div>
 
+    <!-- MoMo required warning (only shows for sellers with no MoMo number set) -->
+    <div class="momo-warning" id="momoWarning" style="display:none;">
+        <i class="fas fa-triangle-exclamation"></i>
+        <div>
+            <strong>Add your Mobile Money number</strong>
+            <p>You need this on file before you can list any products — it's where D-Swift Mall sends your payouts.</p>
+        </div>
+        <button onclick="openEdit()">Add now</button>
+    </div>
+
     <!-- Personal Details -->
     <div class="section">
         <div class="section-title">
@@ -309,6 +334,10 @@
                 <div class="detail-icon"><i class="fas fa-calendar"></i></div>
                 <div><div class="detail-label">Member Since</div><div class="detail-value" id="detailJoin">—</div></div>
             </div>
+            <div class="detail-row" id="detailMomoRow" style="display:none;">
+                <div class="detail-icon"><i class="fas fa-money-bill-wave"></i></div>
+                <div><div class="detail-label">Mobile Money Number</div><div class="detail-value" id="detailMomo">—</div></div>
+            </div>
             <div style="margin-top:14px;">
                 <button class="btn btn-primary" onclick="openEdit()" style="width:100%;">
                     <i class="fas fa-pen"></i> Edit Profile
@@ -324,6 +353,8 @@
             <input type="tel"  id="editPhone" placeholder="+233 ..."/>
             <label>Location</label>
             <input type="text" id="editLocation" placeholder="City, Country"/>
+            <label id="editMomoLabel" style="display:none;">Mobile Money Number</label>
+            <input type="tel" id="editMomo" placeholder="e.g. 0245123456" style="display:none;"/>
             <label>Bio</label>
             <textarea id="editBio" placeholder="Tell us about yourself..."></textarea>
             <label>New Password (leave blank to keep current)</label>
@@ -410,6 +441,7 @@ async function init() {
 
     await fetchRealProfile(session.user.id);
     if (!currentProfile) return;
+    currentProfile.email = session.user.email; // lives on the auth session, not the profiles table
 
     await fetchRealOrders(session.user.id);
     if (currentProfile.role === 'seller') await fetchSellerStats(session.user.id);
@@ -444,7 +476,7 @@ async function fetchRealOrders(userId) {
         items:  o.items || [],
         total:  parseFloat(o.total),
         status: o.status,
-        date:   new Date(o.order_date).toLocaleDateString('en-GB'),
+        date:   new Date(o.created_at).toLocaleDateString('en-GB'),
     }));
     renderOrders({ orders: realOrders });
 }
@@ -467,7 +499,8 @@ function loadProfile() {
         bio:        currentProfile.bio,
         role:       currentProfile.role,
         profilePic: currentProfile.profile_pic,
-        joinDate:   new Date(currentProfile.join_date).toLocaleDateString('en-GB'),
+        momoNumber: currentProfile.momo_number,
+        joinDate:   new Date(currentProfile.created_at).toLocaleDateString('en-GB'),
         orders:     realOrders,
     };
 
@@ -514,6 +547,11 @@ function loadProfile() {
     // Seller card
     if (u.role === 'seller') {
         document.getElementById('sellerCard').style.display = 'flex';
+        document.getElementById('detailMomoRow').style.display = 'flex';
+        document.getElementById('detailMomo').textContent = u.momoNumber || 'Not set';
+
+        const hasMomo = !!(u.momoNumber && u.momoNumber.trim());
+        document.getElementById('momoWarning').style.display = hasMomo ? 'none' : 'flex';
     }
 
     // Orders section (buyers only)
@@ -581,6 +619,12 @@ function openEdit() {
     document.getElementById('editLocation').value = u.location || '';
     document.getElementById('editBio').value       = u.bio      || '';
     document.getElementById('editPassword').value = '';
+
+    const isSeller = u.role === 'seller';
+    document.getElementById('editMomoLabel').style.display = isSeller ? 'block' : 'none';
+    document.getElementById('editMomo').style.display       = isSeller ? 'block' : 'none';
+    if (isSeller) document.getElementById('editMomo').value = u.momo_number || '';
+
     document.getElementById('viewMode').style.display = 'none';
     document.getElementById('editForm').classList.add('open');
 }
@@ -601,11 +645,21 @@ async function saveProfile() {
         return;
     }
 
+    const isSeller = u.role === 'seller';
+    const momo = isSeller ? document.getElementById('editMomo').value.trim() : u.momo_number;
+    if (isSeller && !momo) {
+        showToast('Sellers must have a Mobile Money number on file.');
+        return;
+    }
+
     const saveBtn = document.querySelector('#editForm .btn-green');
     if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…'; }
 
     try {
-        const { error } = await sb.from('profiles').update({ name, phone, location, bio }).eq('id', u.id);
+        const updates = { name, phone, location, bio };
+        if (isSeller) updates.momo_number = momo;
+
+        const { error } = await sb.from('profiles').update(updates).eq('id', u.id);
         if (error) { showToast('Could not save profile. Please try again.'); return; }
 
         if (newPass) {
@@ -615,6 +669,7 @@ async function saveProfile() {
 
         currentProfile.name = name; currentProfile.phone = phone;
         currentProfile.location = location; currentProfile.bio = bio;
+        if (isSeller) currentProfile.momo_number = momo;
 
         closeEdit();
         loadProfile();

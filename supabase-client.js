@@ -67,6 +67,7 @@ async function syncLegacyUserStorage(session) {
         bio:        profile.bio,
         location:   profile.location,
         storeName:  profile.store_name,
+        momoNumber: profile.momo_number,
         profilePic: profile.profile_pic,
         isVerified: !!session.user.email_confirmed_at,
         joinDate:   new Date(profile.created_at).toLocaleDateString('en-GB'),
