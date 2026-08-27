@@ -258,6 +258,7 @@ body{background:var(--bg);min-height:100vh;padding-bottom:30px;}
         <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">Overview</button>
         <button class="tab-btn" data-tab="users" onclick="switchTab('users')">Users</button>
         <button class="tab-btn" data-tab="sellers" onclick="switchTab('sellers')">Sellers</button>
+        <button class="tab-btn" data-tab="payouts" onclick="switchTab('payouts')">Payouts</button>
         <button class="tab-btn" data-tab="buyers" onclick="switchTab('buyers')">Buyers</button>
         <button class="tab-btn" data-tab="products" onclick="switchTab('products')">Products</button>
         <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')">Orders</button>
@@ -299,6 +300,20 @@ body{background:var(--bg);min-height:100vh;padding-bottom:30px;}
                 <div class="search-box"><i class="fas fa-search"></i><input type="text" id="sellerSearch" placeholder="Search sellers…" oninput="renderSellers()"></div>
             </div>
             <div class="table-wrap"><table class="data-table" id="sellersTable"></table></div>
+        </div>
+    </div>
+
+    <!-- PAYOUTS (money owed to sellers, tracked manually — see DEPLOYMENT_GUIDE.md) -->
+    <div class="tab-panel" id="tab-payouts" style="display:none;">
+        <div class="section">
+            <div class="section-title">
+                <span><i class="fas fa-money-bill-transfer"></i> Seller Payouts</span>
+            </div>
+            <p style="font-size:.82rem;color:#888;margin:-6px 0 14px;">
+                This tracks who's owed money — it does NOT send anything automatically.
+                Send the Mobile Money transfer yourself, then click "Mark as Paid" to clear their balance.
+            </p>
+            <div class="table-wrap"><table class="data-table" id="payoutsTable"></table></div>
         </div>
     </div>
 
@@ -515,6 +530,7 @@ async function loadAdminData() {
         renderRecentOrders();
         renderUsers();
         renderSellers();
+        renderPayouts();
         renderBuyers();
         renderProductsGlobal();
         renderOrders();
@@ -587,11 +603,12 @@ function renderSellers() {
     if (!sellers.length) { table.innerHTML = emptyRow('No sellers found.'); return; }
 
     table.innerHTML = `
-        <tr><th>Seller</th><th>Contact</th><th>Products</th><th>Sales</th><th>Gross (GH₵)</th></tr>
+        <tr><th>Seller</th><th>Contact</th><th>Products</th><th>Sales</th><th>Gross (GH₵)</th><th>Pending</th></tr>
         ${sellers.map(s => {
             const products = allProducts.filter(p => p.seller_id === s.id);
             const sales    = allSales.filter(x => x.seller_id === s.id);
             const gross    = sales.reduce((sum, x) => sum + parseFloat(x.gross || 0), 0);
+            const pending  = sales.filter(x => !x.paid_out).reduce((sum, x) => sum + parseFloat(x.gross || 0), 0);
             return `
             <tr class="clickable" onclick="openSellerDetail('${s.id}')">
                 <td><div class="row-name">${escHtml(s.name || 'Unnamed')}</div><div class="row-sub">${escHtml(s.store_name || '')}</div></td>
@@ -599,6 +616,7 @@ function renderSellers() {
                 <td>${products.length}</td>
                 <td>${sales.length}</td>
                 <td>${gross.toFixed(2)}</td>
+                <td style="font-weight:${pending > 0 ? '700' : '400'};color:${pending > 0 ? '#c0392b' : '#aaa'};">${pending > 0 ? 'GH₵ ' + pending.toFixed(2) : '—'}</td>
             </tr>`;
         }).join('')}`;
 }
@@ -608,6 +626,7 @@ function openSellerDetail(sellerId) {
     const products = allProducts.filter(p => p.seller_id === sellerId);
     const sales    = allSales.filter(x => x.seller_id === sellerId);
     const gross    = sales.reduce((sum, x) => sum + parseFloat(x.gross || 0), 0);
+    const pending  = sales.filter(x => !x.paid_out).reduce((sum, x) => sum + parseFloat(x.gross || 0), 0);
 
     document.getElementById('modalTitle').textContent = seller?.name || 'Seller';
     document.getElementById('modalSub').textContent = `${seller?.store_name ? seller.store_name + ' · ' : ''}${seller?.email || ''}${seller?.phone ? ' · ' + seller.phone : ''}`;
@@ -626,9 +645,85 @@ function openSellerDetail(sellerId) {
                         <td>GH₵ ${parseFloat(p.price).toFixed(2)}</td>
                     </tr>`).join('')}
             </table></div>
-            <p style="margin-top:14px;font-size:.82rem;color:#555;"><strong>${sales.length}</strong> sale(s) · <strong>GH₵ ${gross.toFixed(2)}</strong> gross total</p>`;
+            <p style="margin-top:14px;font-size:.82rem;color:#555;"><strong>${sales.length}</strong> sale(s) · <strong>GH₵ ${gross.toFixed(2)}</strong> lifetime gross</p>
+            <div style="margin-top:10px;padding:12px;background:${pending > 0 ? '#fff5f0' : '#f0faf5'};border-radius:10px;">
+                <p style="font-size:.82rem;color:#555;margin-bottom:2px;">Mobile Money: <strong>${escHtml(seller?.momo_number || 'Not set')}</strong></p>
+                <p style="font-size:.9rem;font-weight:700;color:${pending > 0 ? '#c0392b' : '#2e7d32'};margin-bottom:${pending > 0 ? '8px' : '0'};">
+                    ${pending > 0 ? `GH₵ ${pending.toFixed(2)} pending payout` : 'Fully paid out'}
+                </p>
+                ${pending > 0 ? `<button class="gate-btn" style="margin:0;padding:8px 16px;font-size:.8rem;" onclick="markSellerPaid('${sellerId}')"><i class="fas fa-check"></i> Mark as Paid</button>` : ''}
+            </div>`;
     }
     openDetailModal();
+}
+
+// ══════════════════ PAYOUTS ══════════════════
+function renderPayouts() {
+    const sellers = allProfiles.filter(p => p.role === 'seller');
+    const rows = sellers.map(s => {
+        const sales   = allSales.filter(x => x.seller_id === s.id);
+        const pending = sales.filter(x => !x.paid_out).reduce((sum, x) => sum + parseFloat(x.gross || 0), 0);
+        const paid    = sales.filter(x => x.paid_out).reduce((sum, x) => sum + parseFloat(x.gross || 0), 0);
+        return { seller: s, pending, paid, saleCount: sales.length };
+    })
+    .filter(r => r.saleCount > 0) // no point listing sellers with zero sales ever
+    .sort((a, b) => b.pending - a.pending); // biggest amounts owed first
+
+    const table = document.getElementById('payoutsTable');
+    if (!rows.length) { table.innerHTML = emptyRow('No sales recorded yet.'); return; }
+
+    table.innerHTML = `
+        <tr><th>Seller</th><th>Mobile Money</th><th>Pending</th><th>Already Paid</th><th></th></tr>
+        ${rows.map(r => `
+            <tr>
+                <td><div class="row-name">${escHtml(r.seller.name || 'Unnamed')}</div><div class="row-sub">${escHtml(r.seller.store_name || '')}</div></td>
+                <td>${escHtml(r.seller.momo_number || '⚠️ Not set')}</td>
+                <td style="font-weight:700;color:${r.pending > 0 ? '#c0392b' : '#2e7d32'};">GH₵ ${r.pending.toFixed(2)}</td>
+                <td style="color:#888;">GH₵ ${r.paid.toFixed(2)}</td>
+                <td>${r.pending > 0
+                    ? `<button class="gate-btn" style="margin:0;padding:7px 14px;font-size:.76rem;" onclick="markSellerPaid('${r.seller.id}')"><i class="fas fa-check"></i> Mark as Paid</button>`
+                    : `<span style="font-size:.76rem;color:#aaa;">—</span>`}
+                </td>
+            </tr>`).join('')}`;
+}
+
+async function markSellerPaid(sellerId) {
+    const seller  = allProfiles.find(p => p.id === sellerId);
+    const pending = allSales.filter(x => x.seller_id === sellerId && !x.paid_out)
+                             .reduce((sum, x) => sum + parseFloat(x.gross || 0), 0);
+
+    if (pending <= 0) return;
+
+    const confirmed = confirm(
+        `Confirm you have ALREADY sent GH₵ ${pending.toFixed(2)} to ${seller?.name || 'this seller'} ` +
+        `via Mobile Money (${seller?.momo_number || 'no number on file'}).\n\n` +
+        `This only marks it as paid in the system — it does NOT send any money.`
+    );
+    if (!confirmed) return;
+
+    const nowIso = new Date().toISOString();
+    const { error } = await sb
+        .from('sales')
+        .update({ paid_out: true, paid_out_at: nowIso })
+        .eq('seller_id', sellerId)
+        .eq('paid_out', false);
+
+    if (error) {
+        alert('Could not update payout status: ' + (error.message || 'unknown error'));
+        return;
+    }
+
+    // Reflect the change locally without a full reload
+    allSales.forEach(s => {
+        if (s.seller_id === sellerId && !s.paid_out) {
+            s.paid_out = true;
+            s.paid_out_at = nowIso;
+        }
+    });
+
+    renderPayouts();
+    renderSellers();
+    closeDetailModal();
 }
 
 // ══════════════════ BUYERS ══════════════════
