@@ -6,12 +6,17 @@
       <meta name="author" content="CodeHim">
       <title>Contact Us — D-Swift Mall</title>
       <link rel="icon" type="image" href="favicon-round.png">
-      <!-- Site chrome (header/footer/cart) -->
+      <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'>
+      <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'>
+      <!-- Site chrome (header/footer/cart) — loaded AFTER Bootstrap on purpose:
+           Bootstrap defines its own :root --primary/--secondary color variables
+           (blue/gray). Since :root rules share the same specificity, whichever
+           stylesheet loads LAST wins — so kstyle.css needs to come after
+           Bootstrap, or Bootstrap's colors silently overwrite ours sitewide
+           on this page (this was actually happening before this fix). -->
       <link rel="stylesheet" href="kstyle.css?v=9">
       <!-- Page CSS -->
       <link rel="stylesheet" href="style.css">
-      <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/bootstrap.min.css'>
-      <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'>
    </head>
    <body>
     <!-- ══════════════════ DESKTOP HEADER (hidden on mobile) ══════════════════ -->
