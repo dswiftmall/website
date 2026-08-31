@@ -53,7 +53,7 @@ export default async function handler(req, res) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                from: 'D-Swift Mall <onboarding@resend.dev>', // swap once you add your own domain in Resend
+                from: 'D-Swift Mall <notifications@dswiftmall.com>',
                 to: [ADMIN_EMAIL],
                 subject: email.subject,
                 html: email.html,
