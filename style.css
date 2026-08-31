@@ -1,5 +1,15 @@
 body { color: #fff; }
 
+/* This page has no search bar in the header, so nav-links is the only
+   child of .header-content. With the shared kstyle.css rule of
+   justify-content:space-between, a lone flex child sits flush LEFT —
+   but on the homepage it appears flush RIGHT (pushed there by the
+   search bar). This forces the same right-aligned position here,
+   matching about.html/track.html's identical fix. */
+.desktop-header .header-content {
+    justify-content: flex-end;
+}
+
 .right_conatct_social_icon {
     background: linear-gradient(to top right, #1325e8 -5%, #8f10b7 100%);
 }
