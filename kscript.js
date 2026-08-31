@@ -780,10 +780,15 @@ function closeCartFn() { cartContainer.classList.remove('active'); overlay.class
 
 // ── Nav ──────────────────────────────────────────
 function updateNavForUser() {
-    const profileIcon = document.getElementById('profileIcon');
+    const profileIcon    = document.getElementById('profileIcon');
+    const messagesLink   = document.getElementById('navMessagesLink');
+    const loggedIn       = isLoggedIn() && !!getUser();
+
+    if (messagesLink) messagesLink.style.display = loggedIn ? '' : 'none';
+
     if (!profileIcon) return;
 
-    if (!isLoggedIn() || !getUser()) {
+    if (!loggedIn) {
         // Not signed in — icon + "Sign in" label as one unit
         profileIcon.href  = 'login.html';
         profileIcon.title = 'Sign in';
