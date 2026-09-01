@@ -331,6 +331,12 @@ body { background:#f5f7fa; color:#333; line-height:1.6; }
 .mobile-header, .mobile-banner, .flash-bar,
 .mobile-bottom-nav { display:none; }
 
+/* Stay hidden on ALL screen sizes until real banner/flash-sale data has
+   actually loaded — JS adds .has-content once it has something to show.
+   This uses !important specifically so it always wins over the mobile
+   media query below, even on mobile, until there's real content. */
+.mobile-banner:not(.has-content), .flash-bar:not(.has-content) { display:none !important; }
+
 
 /* ══════════════════════════════════════
    MOBILE STYLES  (<= 600px)

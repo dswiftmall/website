@@ -851,7 +851,7 @@ async function loadAndRenderBanners() {
             </div>`).join('');
         dots.innerHTML = data.map((_, i) => `<span class="dot ${i === 0 ? 'active' : ''}"></span>`).join('');
 
-        container.style.display = 'block';
+        container.classList.add('has-content');
         startBannerSlider();
     } catch (err) {
         console.warn('Could not load banners:', err);
@@ -892,14 +892,14 @@ async function loadAndRenderFlashSale() {
         const sale = data[0];
         document.getElementById('flashTitle').textContent = sale.title || 'Flash Sales';
         document.getElementById('flashSeeAll').href = sale.link || '#products';
-        bar.style.display = 'flex';
+        bar.classList.add('has-content');
 
         const endMs = new Date(sale.end_time).getTime();
         const countdownEl = document.getElementById('flashCountdown');
 
         function tick() {
             const diff = endMs - Date.now();
-            if (diff <= 0) { bar.style.display = 'none'; clearInterval(timer); return; }
+            if (diff <= 0) { bar.classList.remove('has-content'); clearInterval(timer); return; }
             const totalSecs = Math.floor(diff / 1000);
             const days = Math.floor(totalSecs / 86400);
             const h = String(Math.floor((totalSecs % 86400) / 3600)).padStart(2, '0');
