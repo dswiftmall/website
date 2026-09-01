@@ -68,49 +68,19 @@
     </section>
 
     <!-- ══════════════ MOBILE BANNER SLIDER (hidden on desktop) ══════════════ -->
-    <div class="mobile-banner">
-        <div class="banner-slide active" style="background: linear-gradient(135deg, #ff6b6b, #ffd166);">
-            <div class="banner-text">
-                <p class="banner-tag">NEW ARRIVALS</p>
-                <h2>Shop Fashion</h2>
-                <p>Up to <strong>40% OFF</strong></p>
-                <a href="#products" class="banner-btn">Shop Now</a>
-            </div>
-            <div class="banner-img"><i class="fas fa-tshirt"></i></div>
-        </div>
-        <div class="banner-slide" style="background: linear-gradient(135deg, #4ecdc4, #1a1a2e);">
-            <div class="banner-text">
-                <p class="banner-tag">HOT DEALS</p>
-                <h2>Electronics</h2>
-                <p>Best prices <strong>guaranteed</strong></p>
-                <a href="#products" class="banner-btn">Shop Now</a>
-            </div>
-            <div class="banner-img"><i class="fas fa-laptop"></i></div>
-        </div>
-        <div class="banner-slide" style="background: linear-gradient(135deg, #ffd166, #ff6b6b);">
-            <div class="banner-text">
-                <p class="banner-tag">CLEARANCE</p>
-                <h2>Home Goods</h2>
-                <p>Starting from <strong>GH₵ 30</strong></p>
-                <a href="#products" class="banner-btn">Shop Now</a>
-            </div>
-            <div class="banner-img"><i class="fas fa-couch"></i></div>
-        </div>
-        <div class="banner-dots">
-            <span class="dot active"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
-        </div>
+    <div class="mobile-banner" id="mobileBanner" style="display:none;">
+        <div class="banner-track" id="bannerTrack"></div>
+        <div class="banner-dots" id="bannerDots"></div>
     </div>
 
     <!-- ══════════════ MOBILE FLASH SALE BAR ══════════════ -->
-    <div class="flash-bar mobile-only">
+    <div class="flash-bar mobile-only" id="flashBar" style="display:none;">
         <div class="flash-left">
-            <i class="fas fa-bolt"></i>
-            <span>Flash Sales</span>
-            <small id="flashTimer">06h : 00m : 00s</small>
+            <i class="fas fa-bolt flash-bolt"></i>
+            <span id="flashTitle">Flash Sales</span>
+            <div class="flash-countdown" id="flashCountdown"></div>
         </div>
-        <a href="#products" class="see-all">See All &rsaquo;</a>
+        <a href="#products" class="see-all" id="flashSeeAll">See All &rsaquo;</a>
     </div>
 
     <!-- ══════════════ SHARED MAIN CONTENT ══════════════ -->
@@ -201,7 +171,7 @@
             </div>
         </div>
         <marquee>If you found yourself on this website, it is not a mistake. You are here because you either want to buy or sell. My name is D-Swift Mall and I am here to make your shopping easier. Call Us On +233 53-820-7600. Thank You. Nice Shopping.</marquee>
-        <div class="copyright"><p>&copy; 2026 D-Swift Mall. All rights reserved.</p></div>
+        <div class="copyright"><p>&copy; 2027 D-Swift Mall. All rights reserved.</p></div>
     </footer>
 
     <!-- ══════════════ MOBILE BOTTOM NAV (hidden on desktop) ══════════════ -->

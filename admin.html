@@ -263,6 +263,7 @@ body{background:var(--bg);min-height:100vh;padding-bottom:30px;}
         <button class="tab-btn" data-tab="products" onclick="switchTab('products')">Products</button>
         <button class="tab-btn" data-tab="orders" onclick="switchTab('orders')">Orders</button>
         <button class="tab-btn" data-tab="messages" onclick="switchTab('messages')">Messages</button>
+        <button class="tab-btn" data-tab="promotions" onclick="switchTab('promotions')">Promotions</button>
     </div>
 
     <!-- OVERVIEW -->
@@ -378,6 +379,26 @@ body{background:var(--bg);min-height:100vh;padding-bottom:30px;}
         </div>
     </div>
 
+    <!-- PROMOTIONS: homepage banner slider + flash sale countdown -->
+    <div class="tab-panel" id="tab-promotions" style="display:none;">
+        <div class="section">
+            <div class="section-title">
+                <span><i class="fas fa-images"></i> Homepage Banners</span>
+                <button class="gate-btn" style="margin:0;padding:9px 18px;font-size:.8rem;" onclick="openBannerCreate()"><i class="fas fa-plus"></i> Add Banner</button>
+            </div>
+            <p style="font-size:.78rem;color:#888;margin:-8px 0 14px;">Shown as the rotating slider at the top of the homepage on mobile. Only "Active" banners appear, in the order set below.</p>
+            <div class="table-wrap"><table class="data-table" id="bannersTable"></table></div>
+        </div>
+        <div class="section">
+            <div class="section-title">
+                <span><i class="fas fa-bolt"></i> Flash Sale</span>
+                <button class="gate-btn" style="margin:0;padding:9px 18px;font-size:.8rem;" onclick="openFlashSaleCreate()"><i class="fas fa-plus"></i> Add Flash Sale</button>
+            </div>
+            <p style="font-size:.78rem;color:#888;margin:-8px 0 14px;">The homepage shows a live countdown to whichever ACTIVE flash sale ends soonest. If none are active, the flash sale bar is hidden entirely.</p>
+            <div class="table-wrap"><table class="data-table" id="flashSalesTable"></table></div>
+        </div>
+    </div>
+
 </div>
 
 <!-- DETAIL MODAL (seller products / buyer orders) -->
@@ -411,6 +432,8 @@ let allProducts = [];
 let allSales    = [];
 let allOrders   = [];
 let allMessages = [];
+let allBanners    = [];
+let allFlashSales = [];
 let orderFilter   = 'all';
 let userFilter    = 'all';
 let productFilter = 'all';
@@ -503,12 +526,14 @@ async function loadAdminData() {
     try {
         const [{ data: profiles, error: e1 }, { data: products, error: e2 },
                { data: sales,    error: e3 }, { data: orders,   error: e4 },
-               contactsResult ] = await Promise.all([
+               contactsResult, bannersResult, flashSalesResult ] = await Promise.all([
             sb.from('profiles').select('*'),
             sb.from('products').select('*'),
             sb.from('sales').select('*'),
             sb.from('orders').select('*').order('created_at', { ascending: false }),
             sb.from('contacts').select('*').order('created_at', { ascending: false }).then(r => r, () => ({ data: [] })),
+            sb.from('banners').select('*').order('sort_order', { ascending: true }).then(r => r, () => ({ data: [] })),
+            sb.from('flash_sales').select('*').order('created_at', { ascending: false }).then(r => r, () => ({ data: [] })),
         ]);
         const firstError = e1 || e2 || e3 || e4;
         if (firstError) throw firstError;
@@ -525,6 +550,8 @@ async function loadAdminData() {
         }));
         // Messages table may not exist yet on every install — fail soft.
         allMessages = (contactsResult && contactsResult.data) || [];
+        allBanners    = (bannersResult && bannersResult.data) || [];
+        allFlashSales = (flashSalesResult && flashSalesResult.data) || [];
 
         renderStats();
         renderRecentOrders();
@@ -535,6 +562,8 @@ async function loadAdminData() {
         renderProductsGlobal();
         renderOrders();
         renderMessages();
+        renderBanners();
+        renderFlashSales();
     } catch (err) {
         statsGrid.innerHTML = `<div class="spinner-row" style="grid-column:1/-1;color:#e05555;">
             <i class="fas fa-triangle-exclamation"></i>
@@ -1002,6 +1031,242 @@ async function deleteProductGlobal(productId) {
     if (!confirm('Permanently remove this product from the store?')) return;
     const { error } = await sb.from('products').delete().eq('id', productId);
     if (error) { alert(error.message || 'Could not delete product.'); return; }
+    await loadAdminData();
+}
+
+// ══════════════════ PROMOTIONS: BANNERS ══════════════════
+function renderBanners() {
+    const table = document.getElementById('bannersTable');
+    if (!allBanners.length) {
+        table.innerHTML = emptyRow('No banners yet — add one to populate the homepage slider.');
+        return;
+    }
+    table.innerHTML = `
+        <tr><th>Image</th><th>Title</th><th>Tag</th><th>Order</th><th>Status</th><th></th></tr>
+        ${allBanners.map(b => `
+            <tr>
+                <td><img src="${escAttr(b.image_url)}" style="width:56px;height:36px;object-fit:cover;border-radius:6px;" onerror="this.style.opacity=0.2"></td>
+                <td>${escHtml(b.title)}</td>
+                <td>${escHtml(b.tag || '—')}</td>
+                <td>${b.sort_order}</td>
+                <td><span class="badge ${b.active ? 'status-active' : 'status-suspended'}">${b.active ? 'Active' : 'Inactive'}</span></td>
+                <td style="white-space:nowrap;">
+                    <button class="icon-btn-sm" title="Edit" onclick="openBannerEditGlobal(${b.id})"><i class="fas fa-pen"></i></button>
+                    <button class="icon-btn-sm ${b.active ? 'ban' : 'unban'}" title="${b.active ? 'Deactivate' : 'Activate'}" onclick="toggleBannerActive(${b.id}, ${!b.active})"><i class="fas ${b.active ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
+                    <button class="icon-btn-sm ban" title="Delete" onclick="deleteBannerGlobal(${b.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`).join('')}`;
+}
+
+function bannerFormFields(b) {
+    return `
+        <img class="form-img-preview" id="bImgPreview" src="${escAttr(b?.image_url || '')}" style="${b?.image_url ? 'display:block;' : ''}">
+        <div class="form-group"><label>Banner Image ${b ? '(leave blank to keep current)' : ''}</label><input type="file" id="bImgInput" accept="image/*"></div>
+        <div class="form-group"><label>Title</label><input id="bTitle" value="${escAttr(b?.title || '')}" placeholder="Shop Fashion"></div>
+        <div class="form-group"><label>Subtitle</label><input id="bSubtitle" value="${escAttr(b?.subtitle || '')}" placeholder="Up to 40% OFF"></div>
+        <div class="form-group"><label>Tag (small label)</label><input id="bTag" value="${escAttr(b?.tag || '')}" placeholder="NEW ARRIVALS"></div>
+        <div class="form-group"><label>Button Text</label><input id="bCta" value="${escAttr(b?.cta_text || 'Shop Now')}"></div>
+        <div class="form-group"><label>Link (where the button goes)</label><input id="bLink" value="${escAttr(b?.link || '#products')}" placeholder="#products or index.html?cat=Fashion"></div>
+        <div class="form-group"><label>Sort Order (lower shows first)</label><input id="bOrder" type="number" value="${b?.sort_order ?? 0}"></div>
+        <div class="form-group"><label><input type="checkbox" id="bActive" ${b?.active !== false ? 'checked' : ''}> Active (shown on homepage)</label></div>
+        <div class="form-error" id="fBannerError"></div>`;
+}
+
+function openBannerCreate() {
+    document.getElementById('formModalTitle').textContent = 'Add Banner';
+    document.getElementById('formModalSub').textContent = 'Appears in the homepage slider';
+    document.getElementById('formModalBody').innerHTML = bannerFormFields(null) + `
+        <div class="form-actions">
+            <button class="form-cancel-btn" onclick="closeFormModal()">Cancel</button>
+            <button class="form-save-btn" onclick="saveBannerGlobal(null)"><i class="fas fa-check"></i> Create</button>
+        </div>`;
+    wireBannerImgPreview();
+    openFormModal();
+}
+
+function openBannerEditGlobal(id) {
+    const b = allBanners.find(x => x.id === id);
+    if (!b) return;
+    document.getElementById('formModalTitle').textContent = 'Edit Banner';
+    document.getElementById('formModalSub').textContent = '';
+    document.getElementById('formModalBody').innerHTML = bannerFormFields(b) + `
+        <div class="form-actions">
+            <button class="form-cancel-btn" onclick="closeFormModal()">Cancel</button>
+            <button class="form-save-btn" onclick="saveBannerGlobal(${b.id})"><i class="fas fa-check"></i> Save</button>
+        </div>`;
+    wireBannerImgPreview();
+    openFormModal();
+}
+
+function wireBannerImgPreview() {
+    document.getElementById('bImgInput')?.addEventListener('change', e => {
+        const file = e.target.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const prev = document.getElementById('bImgPreview');
+            prev.src = ev.target.result; prev.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+async function adminUploadBannerImage(file) {
+    const ext  = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${adminUser.id}/${Date.now()}_${Math.floor(Math.random()*9999)}.${ext}`;
+    const { error } = await sb.storage.from('banners').upload(path, file);
+    if (error) return null;
+    const { data: { publicUrl } } = sb.storage.from('banners').getPublicUrl(path);
+    return publicUrl;
+}
+
+async function saveBannerGlobal(bannerId) {
+    const errEl    = document.getElementById('fBannerError');
+    const title    = document.getElementById('bTitle').value.trim();
+    const subtitle = document.getElementById('bSubtitle').value.trim();
+    const tag      = document.getElementById('bTag').value.trim();
+    const cta      = document.getElementById('bCta').value.trim() || 'Shop Now';
+    const link     = document.getElementById('bLink').value.trim() || '#products';
+    const order    = parseInt(document.getElementById('bOrder').value) || 0;
+    const active   = document.getElementById('bActive').checked;
+    const fileInput = document.getElementById('bImgInput');
+
+    if (!title) { errEl.textContent = 'Title is required.'; return; }
+
+    try {
+        let imageUrl = bannerId ? (allBanners.find(b => b.id === bannerId)?.image_url || '') : '';
+        if (fileInput.files[0]) {
+            const url = await adminUploadBannerImage(fileInput.files[0]);
+            if (url) imageUrl = url;
+        }
+        if (!imageUrl) { errEl.textContent = 'A banner image is required.'; return; }
+
+        const payload = { title, subtitle, tag, cta_text: cta, link, image_url: imageUrl, sort_order: order, active };
+
+        const { error } = bannerId
+            ? await sb.from('banners').update(payload).eq('id', bannerId)
+            : await sb.from('banners').insert(payload);
+        if (error) { errEl.textContent = error.message; return; }
+
+        closeFormModal();
+        await loadAdminData();
+    } catch (_) {
+        errEl.textContent = 'Network error. Please try again.';
+    }
+}
+
+async function toggleBannerActive(id, activeState) {
+    const { error } = await sb.from('banners').update({ active: activeState }).eq('id', id);
+    if (error) { alert(error.message || 'Could not update banner.'); return; }
+    await loadAdminData();
+}
+
+async function deleteBannerGlobal(id) {
+    if (!confirm('Delete this banner?')) return;
+    const { error } = await sb.from('banners').delete().eq('id', id);
+    if (error) { alert(error.message || 'Could not delete banner.'); return; }
+    await loadAdminData();
+}
+
+// ══════════════════ PROMOTIONS: FLASH SALES ══════════════════
+function renderFlashSales() {
+    const table = document.getElementById('flashSalesTable');
+    if (!allFlashSales.length) {
+        table.innerHTML = emptyRow('No flash sales yet — add one to show a countdown on the homepage.');
+        return;
+    }
+    table.innerHTML = `
+        <tr><th>Title</th><th>Ends</th><th>Status</th><th></th></tr>
+        ${allFlashSales.map(f => {
+            const ended = new Date(f.end_time) < new Date();
+            return `
+            <tr>
+                <td>${escHtml(f.title)}</td>
+                <td>${new Date(f.end_time).toLocaleString('en-GB')}${ended ? ' <span style="color:#e05555;font-size:.75rem;">(ended)</span>' : ''}</td>
+                <td><span class="badge ${f.active && !ended ? 'status-active' : 'status-suspended'}">${f.active && !ended ? 'Live' : (ended ? 'Ended' : 'Inactive')}</span></td>
+                <td style="white-space:nowrap;">
+                    <button class="icon-btn-sm" title="Edit" onclick="openFlashSaleEditGlobal(${f.id})"><i class="fas fa-pen"></i></button>
+                    <button class="icon-btn-sm ${f.active ? 'ban' : 'unban'}" title="${f.active ? 'Deactivate' : 'Activate'}" onclick="toggleFlashSaleActive(${f.id}, ${!f.active})"><i class="fas ${f.active ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
+                    <button class="icon-btn-sm ban" title="Delete" onclick="deleteFlashSaleGlobal(${f.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        }).join('')}`;
+}
+
+// datetime-local inputs need "YYYY-MM-DDTHH:MM" in LOCAL time, not the
+// raw ISO string (which is UTC and would show the wrong time in the form)
+function toLocalDatetimeInputValue(isoString) {
+    const d = new Date(isoString);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function flashSaleFormFields(f) {
+    return `
+        <div class="form-group"><label>Title</label><input id="fsTitle" value="${escAttr(f?.title || 'Flash Sales')}"></div>
+        <div class="form-group"><label>Ends At</label><input id="fsEnd" type="datetime-local" value="${f ? toLocalDatetimeInputValue(f.end_time) : ''}"></div>
+        <div class="form-group"><label>Link (where "See All" goes)</label><input id="fsLink" value="${escAttr(f?.link || '#products')}"></div>
+        <div class="form-group"><label><input type="checkbox" id="fsActive" ${f?.active !== false ? 'checked' : ''}> Active</label></div>
+        <div class="form-error" id="fFlashError"></div>`;
+}
+
+function openFlashSaleCreate() {
+    document.getElementById('formModalTitle').textContent = 'Add Flash Sale';
+    document.getElementById('formModalSub').textContent = '';
+    document.getElementById('formModalBody').innerHTML = flashSaleFormFields(null) + `
+        <div class="form-actions">
+            <button class="form-cancel-btn" onclick="closeFormModal()">Cancel</button>
+            <button class="form-save-btn" onclick="saveFlashSaleGlobal(null)"><i class="fas fa-check"></i> Create</button>
+        </div>`;
+    openFormModal();
+}
+
+function openFlashSaleEditGlobal(id) {
+    const f = allFlashSales.find(x => x.id === id);
+    if (!f) return;
+    document.getElementById('formModalTitle').textContent = 'Edit Flash Sale';
+    document.getElementById('formModalSub').textContent = '';
+    document.getElementById('formModalBody').innerHTML = flashSaleFormFields(f) + `
+        <div class="form-actions">
+            <button class="form-cancel-btn" onclick="closeFormModal()">Cancel</button>
+            <button class="form-save-btn" onclick="saveFlashSaleGlobal(${f.id})"><i class="fas fa-check"></i> Save</button>
+        </div>`;
+    openFormModal();
+}
+
+async function saveFlashSaleGlobal(flashSaleId) {
+    const errEl = document.getElementById('fFlashError');
+    const title = document.getElementById('fsTitle').value.trim() || 'Flash Sales';
+    const endRaw = document.getElementById('fsEnd').value;
+    const link  = document.getElementById('fsLink').value.trim() || '#products';
+    const active = document.getElementById('fsActive').checked;
+
+    if (!endRaw) { errEl.textContent = 'Please set an end date/time.'; return; }
+    const endTime = new Date(endRaw).toISOString(); // local input → UTC for storage
+
+    try {
+        const payload = { title, end_time: endTime, link, active };
+        const { error } = flashSaleId
+            ? await sb.from('flash_sales').update(payload).eq('id', flashSaleId)
+            : await sb.from('flash_sales').insert(payload);
+        if (error) { errEl.textContent = error.message; return; }
+
+        closeFormModal();
+        await loadAdminData();
+    } catch (_) {
+        errEl.textContent = 'Network error. Please try again.';
+    }
+}
+
+async function toggleFlashSaleActive(id, activeState) {
+    const { error } = await sb.from('flash_sales').update({ active: activeState }).eq('id', id);
+    if (error) { alert(error.message || 'Could not update flash sale.'); return; }
+    await loadAdminData();
+}
+
+async function deleteFlashSaleGlobal(id) {
+    if (!confirm('Delete this flash sale?')) return;
+    const { error } = await sb.from('flash_sales').delete().eq('id', id);
+    if (error) { alert(error.message || 'Could not delete flash sale.'); return; }
     await loadAdminData();
 }
 

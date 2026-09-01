@@ -86,8 +86,8 @@ async function init() {
     createProductModal();
     setupWishlistPanel();
     setupEventListeners();
-    startBannerSlider();
-    startFlashTimer();
+    loadAndRenderBanners();
+    loadAndRenderFlashSale();
     updateNavForUser();
     refreshDeliveryNote();
     updateCart(); // reflect the cart restored from localStorage right away, not just after the next add/remove
@@ -825,9 +825,43 @@ function showNotification(msg) {
 }
 
 // ── Banner slider ────────────────────────────────
+async function loadAndRenderBanners() {
+    const container = document.getElementById('mobileBanner');
+    if (!container) return;
+    try {
+        if (typeof sb === 'undefined') throw new Error('no supabase client');
+        const { data, error } = await sb
+            .from('banners')
+            .select('*')
+            .eq('active', true)
+            .order('sort_order', { ascending: true });
+        if (error) throw error;
+        if (!data || !data.length) return; // stay hidden — no banners set up yet
+
+        const track = document.getElementById('bannerTrack');
+        const dots  = document.getElementById('bannerDots');
+        track.innerHTML = data.map((b, i) => `
+            <div class="banner-slide ${i === 0 ? 'active' : ''}" style="background-image:url('${escAttrJs(b.image_url)}');">
+                <div class="banner-text">
+                    ${b.tag ? `<p class="banner-tag">${escHtmlJs(b.tag)}</p>` : ''}
+                    <h2>${escHtmlJs(b.title)}</h2>
+                    ${b.subtitle ? `<p>${escHtmlJs(b.subtitle)}</p>` : ''}
+                    <a href="${escAttrJs(b.link || '#products')}" class="banner-btn">${escHtmlJs(b.cta_text || 'Shop Now')}</a>
+                </div>
+            </div>`).join('');
+        dots.innerHTML = data.map((_, i) => `<span class="dot ${i === 0 ? 'active' : ''}"></span>`).join('');
+
+        container.style.display = 'block';
+        startBannerSlider();
+    } catch (err) {
+        console.warn('Could not load banners:', err);
+        // stays hidden — graceful, no broken slider shown
+    }
+}
+
 function startBannerSlider() {
     const slides = document.querySelectorAll('.banner-slide');
-    const dots   = document.querySelectorAll('.dot');
+    const dots   = document.querySelectorAll('#bannerDots .dot');
     if (!slides.length) return;
     let current = 0;
     function goTo(i) {
@@ -836,21 +870,61 @@ function startBannerSlider() {
         slides[current].classList.add('active'); dots[current]?.classList.add('active');
     }
     dots.forEach((d, i) => d.addEventListener('click', () => goTo(i)));
-    setInterval(() => goTo(current + 1), 3500);
+    if (slides.length > 1) setInterval(() => goTo(current + 1), 3500);
 }
 
-// ── Flash sale countdown ──────────────────────────
-function startFlashTimer() {
-    const el = document.getElementById('flashTimer');
-    if (!el) return;
-    let secs = 6 * 3600;
-    setInterval(() => {
-        secs--; if (secs < 0) secs = 6 * 3600;
-        const h = String(Math.floor(secs / 3600)).padStart(2, '0');
-        const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
-        const s = String(secs % 60).padStart(2, '0');
-        el.textContent = `${h}h : ${m}m : ${s}s`;
-    }, 1000);
+// ── Flash sale countdown (real end_time, admin-controlled) ──
+async function loadAndRenderFlashSale() {
+    const bar = document.getElementById('flashBar');
+    if (!bar) return;
+    try {
+        if (typeof sb === 'undefined') throw new Error('no supabase client');
+        const { data, error } = await sb
+            .from('flash_sales')
+            .select('*')
+            .eq('active', true)
+            .gt('end_time', new Date().toISOString())
+            .order('end_time', { ascending: true })
+            .limit(1);
+        if (error) throw error;
+        if (!data || !data.length) return; // stay hidden — no live flash sale
+
+        const sale = data[0];
+        document.getElementById('flashTitle').textContent = sale.title || 'Flash Sales';
+        document.getElementById('flashSeeAll').href = sale.link || '#products';
+        bar.style.display = 'flex';
+
+        const endMs = new Date(sale.end_time).getTime();
+        const countdownEl = document.getElementById('flashCountdown');
+
+        function tick() {
+            const diff = endMs - Date.now();
+            if (diff <= 0) { bar.style.display = 'none'; clearInterval(timer); return; }
+            const totalSecs = Math.floor(diff / 1000);
+            const days = Math.floor(totalSecs / 86400);
+            const h = String(Math.floor((totalSecs % 86400) / 3600)).padStart(2, '0');
+            const m = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, '0');
+            const s = String(totalSecs % 60).padStart(2, '0');
+            const parts = days > 0
+                ? [String(days), h, m, s]
+                : [h, m, s];
+            countdownEl.innerHTML = parts
+                .map(p => `<span class="fc-box">${p}</span>`)
+                .join('<span class="fc-sep">:</span>');
+        }
+        tick();
+        const timer = setInterval(tick, 1000);
+    } catch (err) {
+        console.warn('Could not load flash sale:', err);
+        // stays hidden — graceful, no fake/broken countdown shown
+    }
+}
+
+function escHtmlJs(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function escAttrJs(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
 }
 
 // ── Wishlist panel ───────────────────────────────
