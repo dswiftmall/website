@@ -22,7 +22,7 @@ const PAYSTACK_KEY    = 'pk_live_f3ebee34f08a4c166a4d64c7970ee3b1f6d7b52c'; // r
 // made under their account actually pay out to D-Swift Mall's own bank/
 // MoMo, not theirs. Leave blank ('') to disable splitting entirely and
 // send 100% to the main account instead.
-const PAYSTACK_SUBACCOUNT_CODE = 'ACCT_bcmgyjd7iuai8p';
+const PAYSTACK_SUBACCOUNT_CODE = 'ACCT_bcmgyjd7iuai8pb';
 const DELIVERY_PHONE  = '233552767149'; // fixed D-Swift Mall delivery partner — international format, no + or leading 0
 const CART_KEY        = 'swiftCart';
 const WISHLIST_KEY    = 'swiftWishlist';
