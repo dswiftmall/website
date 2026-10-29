@@ -146,8 +146,20 @@ async function fetchAllProducts() {
     }
 }
 
+// Fisher–Yates shuffle — returns a NEW array in random order (original untouched)
+function shuffleArray(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
 async function loadProducts(cat = 'all') {
-    if (!productsCache) productsCache = await fetchAllProducts();
+    // Shuffled once per page load, so every refresh shows a different order.
+    // (Switching categories keeps that same order so products don't jump around while browsing.)
+    if (!productsCache) productsCache = shuffleArray(await fetchAllProducts());
     allProducts = (!cat || cat === 'all')
         ? productsCache
         : productsCache.filter(p => p.category === cat);
