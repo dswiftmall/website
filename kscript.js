@@ -279,6 +279,14 @@ function createProductModal() {
             <div class="pm-seller" id="pmSeller"></div>
             <div class="pm-desc-label">Description</div>
             <div class="pm-desc" id="pmDesc"></div>
+            <div class="pm-qty-row">
+                <span class="pm-qty-label">Quantity</span>
+                <div class="pm-qty">
+                    <button type="button" id="pmQtyMinus" aria-label="Decrease quantity">&minus;</button>
+                    <input type="number" id="pmQtyInput" min="1" max="99" value="1" inputmode="numeric" aria-label="Quantity">
+                    <button type="button" id="pmQtyPlus" aria-label="Increase quantity">+</button>
+                </div>
+            </div>
             <div class="pm-actions">
                 <button class="pm-wishlist-btn" id="pmWishBtn"><i class="fas fa-heart"></i> <span>Wishlist</span></button>
                 <button class="pm-cart-btn" id="pmCartBtn"><i class="fas fa-shopping-cart"></i> Add to Cart</button>
@@ -286,6 +294,32 @@ function createProductModal() {
         </div>
     </div>`;
     document.body.appendChild(modal);
+
+    // Styles for the quantity controls live here so no other file needs changing
+    if (!document.getElementById('qtyStyles')) {
+        const st = document.createElement('style');
+        st.id = 'qtyStyles';
+        st.textContent = `
+            .pm-qty-row { display:flex; align-items:center; justify-content:space-between; margin:14px 0 4px; }
+            .pm-qty-label { font-weight:600; font-size:.9rem; color:#444; }
+            .pm-qty { display:flex; align-items:center; gap:8px; }
+            .pm-qty button { width:34px; height:34px; border-radius:50%; border:1px solid #ddd; background:#fff;
+                             font-size:1.1rem; line-height:1; cursor:pointer; }
+            .pm-qty button:active { background:#f0f0f0; }
+            .pm-qty input, .quantity-input { width:52px; height:34px; text-align:center; border:1px solid #ddd;
+                             border-radius:8px; font-size:.95rem; font-family:inherit; -moz-appearance:textfield; }
+            .quantity-input { width:46px; height:28px; font-size:.85rem; }
+            .pm-qty input::-webkit-outer-spin-button, .pm-qty input::-webkit-inner-spin-button,
+            .quantity-input::-webkit-outer-spin-button, .quantity-input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }`;
+        document.head.appendChild(st);
+    }
+
+    const qtyInput = document.getElementById('pmQtyInput');
+    const clampQty = () => { let v = parseInt(qtyInput.value); if (isNaN(v) || v < 1) v = 1; qtyInput.value = Math.min(MAX_QTY, v); };
+    document.getElementById('pmQtyMinus').addEventListener('click', () => { qtyInput.value = Math.max(1, (parseInt(qtyInput.value) || 1) - 1); });
+    document.getElementById('pmQtyPlus').addEventListener('click',  () => { qtyInput.value = Math.min(MAX_QTY, (parseInt(qtyInput.value) || 1) + 1); });
+    qtyInput.addEventListener('change', clampQty);
+
     document.getElementById('pmBackdrop').addEventListener('click', closeProductModal);
     document.getElementById('pmClose').addEventListener('click', closeProductModal);
 }
@@ -322,7 +356,12 @@ function openProductModal(product) {
         wishBtn.querySelector('span').textContent = now ? 'Wishlisted' : 'Wishlist';
         showNotification(now ? `${product.name} added to wishlist!` : 'Removed from wishlist.');
     };
-    document.getElementById('pmCartBtn').onclick = () => { addToCart(product.id); closeProductModal(); };
+    document.getElementById('pmQtyInput').value = 1;
+    document.getElementById('pmCartBtn').onclick = () => {
+        const qty = parseInt(document.getElementById('pmQtyInput').value) || 1;
+        addToCart(product.id, qty);
+        closeProductModal();
+    };
 
     document.getElementById('productModal').classList.add('open');
     document.body.style.overflow = 'hidden';
@@ -341,14 +380,16 @@ function switchModalImg(thumb, src) {
 // ════════════════════════════════════════════════
 //  CART
 // ════════════════════════════════════════════════
-function addToCart(id) {
+const MAX_QTY = 99;
+function addToCart(id, qty = 1) {
     const product = allProducts.find(p => p.id === id);
     if (!product) return;
+    qty = Math.min(MAX_QTY, Math.max(1, parseInt(qty) || 1));
     const existing = cart.find(i => i.id === id);
-    if (existing) existing.quantity++;
-    else cart.push({ ...product, quantity: 1, selected: true });
+    if (existing) existing.quantity = Math.min(MAX_QTY, existing.quantity + qty);
+    else cart.push({ ...product, quantity: qty, selected: true });
     updateCart();
-    showNotification(`${product.name} added to cart!`);
+    showNotification(qty > 1 ? `${product.name} ×${qty} added to cart!` : `${product.name} added to cart!`);
 }
 function removeFromCart(id) {
     cart = cart.filter(i => i.id !== id);
@@ -357,9 +398,18 @@ function removeFromCart(id) {
 function updateQuantity(id, change) {
     const item = cart.find(i => i.id === id);
     if (!item) return;
-    item.quantity += change;
+    item.quantity = Math.min(MAX_QTY, item.quantity + change);
     if (item.quantity <= 0) removeFromCart(id);
     else updateCart();
+}
+// Used when someone types a quantity straight into the cart box
+function setQuantity(id, qty) {
+    const item = cart.find(i => i.id === id);
+    if (!item) return;
+    qty = parseInt(qty);
+    if (isNaN(qty) || qty < 1) qty = 1;
+    item.quantity = Math.min(MAX_QTY, qty);
+    updateCart();
 }
 function toggleItemSelected(id, checked) {
     const item = cart.find(i => i.id === id);
@@ -406,7 +456,7 @@ function updateCart() {
                         <div class="cart-item-price">GH&#8373; ${item.price.toFixed(2)}</div>
                         <div class="cart-item-controls">
                             <button class="quantity-btn minus" data-id="${item.id}">-</button>
-                            <span class="quantity">${item.quantity}</span>
+                            <input type="number" class="quantity-input" data-id="${item.id}" min="1" max="99" inputmode="numeric" value="${item.quantity}" aria-label="Quantity">
                             <button class="quantity-btn plus"  data-id="${item.id}">+</button>
                             <button class="remove-item" data-id="${item.id}"><i class="fas fa-trash"></i></button>
                         </div>
@@ -423,6 +473,8 @@ function updateCart() {
             btn.addEventListener('click', e => updateQuantity(parseInt(e.currentTarget.getAttribute('data-id')), -1)));
         document.querySelectorAll('.quantity-btn.plus').forEach(btn =>
             btn.addEventListener('click', e => updateQuantity(parseInt(e.currentTarget.getAttribute('data-id')), 1)));
+        document.querySelectorAll('.quantity-input').forEach(inp =>
+            inp.addEventListener('change', e => setQuantity(parseInt(e.currentTarget.getAttribute('data-id')), e.currentTarget.value)));
     }
 
     if (cartTotalEl)  cartTotalEl.textContent = `GH₵ ${total.toFixed(2)}`;
